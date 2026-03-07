@@ -1,0 +1,13 @@
+# XcodeGen — generated project files
+*.xcodeproj/
+*.xcworkspace/
+.xcodegen/
+
+# Xcode build artifacts
+build/
+DerivedData/
+xcuserdata/
+*.xcuserdatad/
+
+# macOS
+.DS_Store
