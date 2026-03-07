@@ -1,0 +1,16 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "glob": "**/*.md",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "npx markdownlint-cli2 --fix '{file_path}' || true"
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -32,6 +32,7 @@
 ---
 
 ### Stories by Activity
+
 *(Organized vertically: Top = Essential/MVP, Bottom = Nice-to-have/v1.0+)*
 
 #### 1. START EXPERIENCE
