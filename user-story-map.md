@@ -12,10 +12,10 @@
 
 **MVP Scope**:
 
-- Single level
-- No power-ups
+- Single level defined in data
 - Touch controls for paddle
-- Modern look and sound
+- Ball attached to paddle, launches on tap
+- Modern look and sound (sound always on)
 
 **Launch Version (v1.0)**:
 
@@ -23,6 +23,7 @@
 - Reasonable difficulty curve
 - Power-ups system
 - Possibly accelerometer/tilt controls
+- Sound toggle setting
 
 ---
 
@@ -40,38 +41,58 @@ Organized vertically: Top = Essential/MVP, Bottom = Nice-to-have/v1.0+
 
 #### 1. START EXPERIENCE
 
-- Launch app and see main menu
-- Tap to start new game
-- View instructions/how to play
+- Show splash screen with "Tap to Play"
+- View instructions/how to play *(v1.0+)*
 - Resume previous game *(v1.0+)*
-- Adjust settings (sound on/off)
+- Adjust settings (sound on/off) *(v1.0+)*
 
 #### 2. PLAY LEVEL
 
-- Control paddle with touch (swipe/drag)
-- Ball launches and bounces
-- Ball breaks bricks on contact
+- Ball sits on paddle at game start and after losing a life
+- Tap to launch ball from paddle
+- Ball bounces off top and side walls
 - Ball bounces off paddle
-- Ball bounces off walls
+- Level layout defined in data (level config)
+- Render brick grid from level data
+- Ball-brick collision destroys brick and awards points
 - Lose life when ball falls off bottom
-- See current score
-- See lives remaining
+- See current score (HUD)
+- See lives remaining (HUD)
 - Pause game
 - Control paddle with tilt *(v1.0+)*
 
 #### 3. PROGRESS
 
-- Clear all bricks to complete level
+- Detect when all bricks are cleared (trigger level complete)
 - Advance to next level *(v1.0+)*
 - Collect power-ups *(v1.0+)*
 - Track high score *(v1.0+)*
 
 #### 4. COMPLETE/FAIL
 
-- See game over when lives run out
-- See victory screen when level(s) complete
-- Return to main menu
-- Restart game
+- Show game over screen when all lives lost
+- Show victory screen when level complete
+- Tap to restart game
+- Return to main menu *(v1.0+)*
+
+---
+
+## Walking Skeleton
+
+The thinnest deployable slice that exercises the full scene flow end-to-end.
+No game logic — just scene transitions and state wiring.
+
+**Scene flow**: `SplashScene` → `GameScene` → `GameSummaryScene` → `SplashScene`
+
+**Game screen state machine** (skeleton only):
+
+`WaitingToLaunch` → `Playing` → `BallLost` → (lives = 0) → `GameOver`
+
+Stories:
+
+- 🦴 `SplashScene`: app launches, shows splash, tap to continue
+- 🦴 `GameScene`: ball drops immediately (no paddle, no bricks), loses all lives
+- 🦴 `GameSummaryScene`: shows "Game Over", tap to return to splash
 
 ---
 
@@ -79,19 +100,23 @@ Organized vertically: Top = Essential/MVP, Bottom = Nice-to-have/v1.0+
 
 The MVP includes:
 
-- ✅ Basic main menu
-- ✅ Single level gameplay
-- ✅ Touch paddle control
-- ✅ Core brick-breaking mechanics (ball physics, collisions)
-- ✅ Lives and score tracking
-- ✅ Game over/victory states
+- ✅ Splash screen (tap to play)
+- ✅ Ball attached to paddle, tap to launch
+- ✅ Ball physics: wall and paddle bouncing
+- ✅ Level layout defined in data
+- ✅ Brick grid rendered from level data
+- ✅ Ball-brick collision: destroy brick, award points
+- ✅ Lose life when ball falls off bottom
+- ✅ Lives and score tracking (HUD)
+- ✅ Game over / victory screens with restart
 - ✅ Pause functionality
-- ✅ Basic settings (sound toggle)
 
 ## v1.0 Launch Additions
 
 Beyond MVP:
 
+- Main menu with named buttons
+- Sound toggle setting
 - Multiple levels with progression
 - Power-ups system
 - Tilt/accelerometer controls
