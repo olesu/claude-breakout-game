@@ -39,16 +39,11 @@ final class GameScene: SKScene {
         stateMachine.ballLost()
         livesLabel.text = livesText
 
-        switch stateMachine.state {
-        case .waitingToLaunch:
+        if stateMachine.state == .gameOver {
+            present(GameSummaryScene(size: size))
+        } else {
             stateMachine.launch()
             scheduleBallLoss()
-        case .gameOver:
-            let scene = GameSummaryScene(size: size)
-            scene.scaleMode = scaleMode
-            view?.presentScene(scene, transition: .fade(withDuration: 0.4))
-        case .playing:
-            break
         }
     }
 }

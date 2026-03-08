@@ -20,8 +20,6 @@ final class SplashScene: SKScene {
     }
 
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
-        let scene = GameScene(size: size)
-        scene.scaleMode = scaleMode
-        view?.presentScene(scene, transition: .fade(withDuration: 0.4))
+        present(GameScene(size: size))
     }
 }
