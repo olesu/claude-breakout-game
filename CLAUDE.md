@@ -31,3 +31,8 @@ open BreakoutGame.xcodeproj
 
 - `project.yml` — source of truth for project configuration (committed)
 - `BreakoutGame.xcodeproj/` — generated, gitignored
+
+## Build & Test
+
+After implementing code changes, always run `scripts/build.sh`. It generates the
+Xcode project, builds, and runs all tests.
