@@ -72,14 +72,21 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
         let columns = level.grid[0].count
         let spacing = Theme.Layout.brickSpacing
         let margin = Theme.Layout.brickSideMargin
-        let size = brickSize(sceneWidth: frame.width, columns: columns, spacing: spacing, margin: margin)
-        let gridOrigin = CGPoint(x: frame.minX + margin, y: frame.maxY - Theme.Layout.brickTopMargin)
+        let size = brickSize(
+            sceneWidth: frame.width, columns: columns, spacing: spacing, margin: margin
+        )
+        let gridOrigin = CGPoint(
+            x: frame.minX + margin, y: frame.maxY - Theme.Layout.brickTopMargin
+        )
 
         for (rowIndex, row) in level.grid.enumerated() {
             for (colIndex, present) in row.enumerated() {
                 guard present else { continue }
                 let brick = BrickNode(size: size)
-                brick.position = brickPosition(column: colIndex, row: rowIndex, size: size, spacing: spacing, gridOrigin: gridOrigin)
+                brick.position = brickPosition(
+                    column: colIndex, row: rowIndex,
+                    size: size, spacing: spacing, gridOrigin: gridOrigin
+                )
                 addChild(brick)
                 bricks.append(brick)
             }
@@ -108,7 +115,8 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
     }
 
     func didBegin(_ contact: SKPhysicsContact) {
-        guard let brick = (contact.bodyA.node as? BrickNode) ?? (contact.bodyB.node as? BrickNode) else { return }
+        let brick = (contact.bodyA.node as? BrickNode) ?? (contact.bodyB.node as? BrickNode)
+        guard let brick else { return }
         brick.removeFromParent()
         bricks.removeAll { $0 === brick }
         stateMachine.addScore(Theme.Layout.brickPoints)

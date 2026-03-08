@@ -4,7 +4,10 @@ final class BallNode: SKShapeNode {
     init(radius: CGFloat) {
         super.init()
         let diameter = radius * 2
-        path = CGPath(ellipseIn: CGRect(x: -radius, y: -radius, width: diameter, height: diameter), transform: nil)
+        path = CGPath(
+            ellipseIn: CGRect(x: -radius, y: -radius, width: diameter, height: diameter),
+            transform: nil
+        )
         fillColor = Theme.Color.primary
         strokeColor = .clear
 
@@ -16,7 +19,8 @@ final class BallNode: SKShapeNode {
         body.isDynamic = true
         body.allowsRotation = false
         body.categoryBitMask = PhysicsCategory.ball
-        body.collisionBitMask = PhysicsCategory.wall | PhysicsCategory.paddle | PhysicsCategory.brick
+        body.collisionBitMask =
+            PhysicsCategory.wall | PhysicsCategory.paddle | PhysicsCategory.brick
         physicsBody = body
     }
 

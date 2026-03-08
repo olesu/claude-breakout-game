@@ -18,6 +18,9 @@ run_xcodebuild() {
   fi
 }
 
+echo "==> Linting..."
+swiftlint lint --strict Sources Tests
+
 echo "==> Generating Xcode project..."
 xcodegen generate
 

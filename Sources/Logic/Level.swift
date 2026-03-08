@@ -6,6 +6,6 @@ struct Level {
         [true, true, true, true, true, true, true, true],
         [true, true, true, true, true, true, true, true],
         [true, true, true, true, true, true, true, true],
-        [true, true, true, true, true, true, true, true],
+        [true, true, true, true, true, true, true, true]
     ])
 }
