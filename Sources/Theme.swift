@@ -25,6 +25,7 @@ enum Theme {
         static let paddleOffsetY: CGFloat = 60
         static let paddleWidthRatio: CGFloat = 0.2
         static let paddleHeight: CGFloat = 14
+        static let ballRadius: CGFloat = 10
         static let transitionDuration: TimeInterval = 0.4
     }
 }

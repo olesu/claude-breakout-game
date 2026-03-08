@@ -5,6 +5,7 @@ final class GameScene: SKScene {
     private let ballLossInterval: TimeInterval = 1.0
     private var livesLabel: SKLabelNode!
     private var paddle: PaddleNode!
+    private var ball: BallNode!
 
     override func didMove(to view: SKView) {
         backgroundColor = .black
@@ -24,8 +25,15 @@ final class GameScene: SKScene {
         paddle.position = CGPoint(x: frame.midX, y: frame.minY + Theme.Layout.paddleOffsetY)
         addChild(paddle)
 
-        stateMachine.launch()
+        ball = BallNode(radius: Theme.Layout.ballRadius)
+        ball.position = restingBallPosition()
+        addChild(ball)
+
         scheduleBallLoss()
+    }
+
+    override func update(_ currentTime: TimeInterval) {
+        ball.position = restingBallPosition()
     }
 
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
@@ -44,6 +52,14 @@ final class GameScene: SKScene {
             halfPaddleWidth: paddle.size.width / 2
         )
         paddle.position.x = x
+    }
+
+    private func restingBallPosition() -> CGPoint {
+        ballRestingPosition(
+            paddlePosition: paddle.position,
+            paddleHalfHeight: paddle.size.height / 2,
+            ballRadius: Theme.Layout.ballRadius
+        )
     }
 
     private var livesText: String { "Lives: \(stateMachine.lives)" }
