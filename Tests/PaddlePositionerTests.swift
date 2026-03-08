@@ -1,33 +1,29 @@
-import XCTest
 @testable import BreakoutGame
+import CoreGraphics
+import Testing
 
-final class PaddlePositionerTests: XCTestCase {
+struct PaddlePositionerTests {
     // sceneWidth = 390, halfPaddleWidth = 39 (20% of 390 / 2)
     let sceneWidth: CGFloat = 390
     let halfPaddleWidth: CGFloat = 39
 
-    func testTouchInMiddleReturnsExactX() {
-        let x = clampedPaddleX(touchX: 195, sceneWidth: sceneWidth, halfPaddleWidth: halfPaddleWidth)
-        XCTAssertEqual(x, 195)
+    @Test func touchInMiddleReturnsExactX() {
+        #expect(clampedPaddleX(touchX: 195, sceneWidth: sceneWidth, halfPaddleWidth: halfPaddleWidth) == 195)
     }
 
-    func testTouchPastLeftEdgeClamps() {
-        let x = clampedPaddleX(touchX: 10, sceneWidth: sceneWidth, halfPaddleWidth: halfPaddleWidth)
-        XCTAssertEqual(x, halfPaddleWidth)
+    @Test func touchPastLeftEdgeClamps() {
+        #expect(clampedPaddleX(touchX: 10, sceneWidth: sceneWidth, halfPaddleWidth: halfPaddleWidth) == halfPaddleWidth)
     }
 
-    func testTouchPastRightEdgeClamps() {
-        let x = clampedPaddleX(touchX: 385, sceneWidth: sceneWidth, halfPaddleWidth: halfPaddleWidth)
-        XCTAssertEqual(x, sceneWidth - halfPaddleWidth)
+    @Test func touchPastRightEdgeClamps() {
+        #expect(clampedPaddleX(touchX: 385, sceneWidth: sceneWidth, halfPaddleWidth: halfPaddleWidth) == sceneWidth - halfPaddleWidth)
     }
 
-    func testTouchExactlyAtLeftBoundaryNotClamped() {
-        let x = clampedPaddleX(touchX: halfPaddleWidth, sceneWidth: sceneWidth, halfPaddleWidth: halfPaddleWidth)
-        XCTAssertEqual(x, halfPaddleWidth)
+    @Test func touchExactlyAtLeftBoundaryNotClamped() {
+        #expect(clampedPaddleX(touchX: halfPaddleWidth, sceneWidth: sceneWidth, halfPaddleWidth: halfPaddleWidth) == halfPaddleWidth)
     }
 
-    func testTouchExactlyAtRightBoundaryNotClamped() {
-        let x = clampedPaddleX(touchX: sceneWidth - halfPaddleWidth, sceneWidth: sceneWidth, halfPaddleWidth: halfPaddleWidth)
-        XCTAssertEqual(x, sceneWidth - halfPaddleWidth)
+    @Test func touchExactlyAtRightBoundaryNotClamped() {
+        #expect(clampedPaddleX(touchX: sceneWidth - halfPaddleWidth, sceneWidth: sceneWidth, halfPaddleWidth: halfPaddleWidth) == sceneWidth - halfPaddleWidth)
     }
 }
