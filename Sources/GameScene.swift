@@ -9,20 +9,22 @@ final class GameScene: SKScene {
     override func didMove(to view: SKView) {
         backgroundColor = .black
         physicsWorld.gravity = .zero
-
         setupWalls()
+        setupUI()
+        setupNodes()
+    }
 
-        let title = SKLabelNode(text: "GAME SCENE")
-        title.fontName = Theme.Font.bold
-        title.fontSize = Theme.FontSize.medium
-        title.fontColor = Theme.Color.primary
-        title.position = CGPoint(x: frame.midX, y: frame.midY + Theme.Layout.paddleOffsetY)
+    private func setupUI() {
+        let title = SKLabelNode.makeTitle("GAME SCENE")
+        title.position = CGPoint(x: frame.midX, y: frame.midY + Theme.Layout.titleOffsetY)
         addChild(title)
 
         livesLabel = SKLabelNode.makeBody(livesText, color: Theme.Color.accent)
         livesLabel.position = CGPoint(x: frame.midX, y: frame.midY)
         addChild(livesLabel)
+    }
 
+    private func setupNodes() {
         paddle = PaddleNode(sceneWidth: frame.width)
         paddle.position = CGPoint(x: frame.midX, y: frame.minY + Theme.Layout.paddleOffsetY)
         addChild(paddle)
@@ -69,7 +71,7 @@ final class GameScene: SKScene {
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
         if stateMachine.state == .waitingToLaunch {
             stateMachine.launch()
-            ball.physicsBody?.velocity = CGVector(dx: 300, dy: 500)
+            ball.physicsBody?.velocity = Theme.Layout.ballLaunchVelocity
         } else {
             movePaddle(to: touches)
         }
