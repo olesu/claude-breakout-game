@@ -34,4 +34,30 @@ struct GameStateMachineTests {
         machine.ballLost()
         #expect(machine.state == .gameOver)
     }
+
+    @Test func initialScoreIsZero() {
+        let machine = GameStateMachine()
+        #expect(machine.score == 0)
+    }
+
+    @Test func addScoreIncrementsWhilePlaying() {
+        let machine = GameStateMachine()
+        machine.launch()
+        machine.addScore(10)
+        #expect(machine.score == 10)
+    }
+
+    @Test func addScoreAccumulates() {
+        let machine = GameStateMachine()
+        machine.launch()
+        machine.addScore(10)
+        machine.addScore(10)
+        #expect(machine.score == 20)
+    }
+
+    @Test func addScoreIgnoredWhenNotPlaying() {
+        let machine = GameStateMachine()
+        machine.addScore(10)
+        #expect(machine.score == 0)
+    }
 }

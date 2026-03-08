@@ -16,7 +16,7 @@ final class BallNode: SKShapeNode {
         body.isDynamic = true
         body.allowsRotation = false
         body.categoryBitMask = PhysicsCategory.ball
-        body.collisionBitMask = PhysicsCategory.wall | PhysicsCategory.paddle
+        body.collisionBitMask = PhysicsCategory.wall | PhysicsCategory.paddle | PhysicsCategory.brick
         physicsBody = body
     }
 

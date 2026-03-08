@@ -17,6 +17,7 @@ enum Theme {
         static let secondary: UIColor = .lightGray
         static let accent: UIColor = .yellow
         static let danger: UIColor = .red
+        static let brick: UIColor = .cyan
     }
 
     enum Layout {
@@ -28,5 +29,10 @@ enum Theme {
         static let ballRadius: CGFloat = 10
         static let ballLaunchVelocity = CGVector(dx: 300, dy: 500)
         static let transitionDuration: TimeInterval = 0.4
+        static let brickSpacing: CGFloat = 4
+        static let brickHeight: CGFloat = 20
+        static let brickSideMargin: CGFloat = 8
+        static let brickTopMargin: CGFloat = 120
+        static let brickPoints: Int = 10
     }
 }

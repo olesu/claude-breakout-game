@@ -7,9 +7,15 @@ enum GameState: Equatable {
 class GameStateMachine {
     private(set) var state: GameState = .waitingToLaunch
     private(set) var lives: Int
+    private(set) var score: Int = 0
 
     init(lives: Int = 3) {
         self.lives = lives
+    }
+
+    func addScore(_ points: Int) {
+        guard state == .playing else { return }
+        score += points
     }
 
     func launch() {
