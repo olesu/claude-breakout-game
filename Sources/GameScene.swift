@@ -2,13 +2,15 @@ import SpriteKit
 
 final class GameScene: SKScene {
     private let stateMachine = GameStateMachine()
-    private let ballLossInterval: TimeInterval = 1.0
     private var livesLabel: SKLabelNode!
     private var paddle: PaddleNode!
     private var ball: BallNode!
 
     override func didMove(to view: SKView) {
         backgroundColor = .black
+        physicsWorld.gravity = .zero
+
+        setupWalls()
 
         let title = SKLabelNode(text: "GAME SCENE")
         title.fontName = Theme.Font.bold
@@ -28,16 +30,49 @@ final class GameScene: SKScene {
         ball = BallNode(radius: Theme.Layout.ballRadius)
         ball.position = restingBallPosition()
         addChild(ball)
+    }
 
-        scheduleBallLoss()
+    private func setupWalls() {
+        func wallNode(from: CGPoint, to: CGPoint) -> SKNode {
+            let node = SKNode()
+            let body = SKPhysicsBody(edgeFrom: from, to: to)
+            body.restitution = 1
+            body.friction = 0
+            body.categoryBitMask = PhysicsCategory.wall
+            node.physicsBody = body
+            return node
+        }
+
+        addChild(wallNode(
+            from: CGPoint(x: frame.minX, y: frame.maxY),
+            to: CGPoint(x: frame.maxX, y: frame.maxY)
+        ))
+        addChild(wallNode(
+            from: CGPoint(x: frame.minX, y: frame.minY),
+            to: CGPoint(x: frame.minX, y: frame.maxY)
+        ))
+        addChild(wallNode(
+            from: CGPoint(x: frame.maxX, y: frame.minY),
+            to: CGPoint(x: frame.maxX, y: frame.maxY)
+        ))
     }
 
     override func update(_ currentTime: TimeInterval) {
-        ball.position = restingBallPosition()
+        if stateMachine.state == .waitingToLaunch {
+            ball.physicsBody?.velocity = .zero
+            ball.position = restingBallPosition()
+        } else if stateMachine.state == .playing && ball.position.y < frame.minY {
+            handleBallLoss()
+        }
     }
 
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
-        movePaddle(to: touches)
+        if stateMachine.state == .waitingToLaunch {
+            stateMachine.launch()
+            ball.physicsBody?.velocity = CGVector(dx: 300, dy: 500)
+        } else {
+            movePaddle(to: touches)
+        }
     }
 
     override func touchesMoved(_ touches: Set<UITouch>, with event: UIEvent?) {
@@ -64,22 +99,12 @@ final class GameScene: SKScene {
 
     private var livesText: String { "Lives: \(stateMachine.lives)" }
 
-    private func scheduleBallLoss() {
-        run(.sequence([
-            .wait(forDuration: ballLossInterval),
-            .run { [weak self] in self?.handleBallLoss() }
-        ]))
-    }
-
     private func handleBallLoss() {
         stateMachine.ballLost()
         livesLabel.text = livesText
 
         if stateMachine.state == .gameOver {
             present(GameSummaryScene(size: size))
-        } else {
-            stateMachine.launch()
-            scheduleBallLoss()
         }
     }
 }
