@@ -36,3 +36,7 @@ open BreakoutGame.xcodeproj
 
 After implementing code changes, always run `scripts/build.sh`. It generates the
 Xcode project, builds, and runs all tests.
+
+## Testing Conventions
+
+Use Swift Testing (`import Testing`, `@Test`, `#expect`) — not XCTest.
