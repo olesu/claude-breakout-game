@@ -69,11 +69,10 @@ final class GameScene: SKScene {
     }
 
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
+        movePaddle(to: touches)
         if stateMachine.state == .waitingToLaunch {
             stateMachine.launch()
             ball.physicsBody?.velocity = Theme.Layout.ballLaunchVelocity
-        } else {
-            movePaddle(to: touches)
         }
     }
 
