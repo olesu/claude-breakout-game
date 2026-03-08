@@ -27,7 +27,7 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
         addChild(livesLabel)
 
         scoreLabel = SKLabelNode.makeBody(scoreText, color: Theme.Color.accent)
-        scoreLabel.position = CGPoint(x: frame.midX, y: frame.maxY - 40)
+        scoreLabel.position = CGPoint(x: frame.midX, y: frame.maxY - Theme.Layout.scoreOffsetY)
         addChild(scoreLabel)
     }
 
@@ -108,16 +108,7 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
     }
 
     func didBegin(_ contact: SKPhysicsContact) {
-        let brick: BrickNode?
-        if let b = contact.bodyA.node as? BrickNode {
-            brick = b
-        } else if let b = contact.bodyB.node as? BrickNode {
-            brick = b
-        } else {
-            brick = nil
-        }
-
-        guard let brick else { return }
+        guard let brick = (contact.bodyA.node as? BrickNode) ?? (contact.bodyB.node as? BrickNode) else { return }
         brick.removeFromParent()
         bricks.removeAll { $0 === brick }
         stateMachine.addScore(Theme.Layout.brickPoints)
