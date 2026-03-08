@@ -4,18 +4,12 @@ final class GameSummaryScene: SKScene {
     override func didMove(to view: SKView) {
         backgroundColor = .black
 
-        let title = SKLabelNode(text: "GAME OVER")
-        title.fontName = "AvenirNext-Bold"
-        title.fontSize = 48
-        title.fontColor = .red
-        title.position = CGPoint(x: frame.midX, y: frame.midY + 40)
+        let title = SKLabelNode.makeTitle("GAME OVER", color: Theme.Color.danger)
+        title.position = CGPoint(x: frame.midX, y: frame.midY + Theme.Layout.titleOffsetY)
         addChild(title)
 
-        let prompt = SKLabelNode(text: "Tap to Play Again")
-        prompt.fontName = "AvenirNext-Regular"
-        prompt.fontSize = 22
-        prompt.fontColor = .lightGray
-        prompt.position = CGPoint(x: frame.midX, y: frame.midY - 20)
+        let prompt = SKLabelNode.makeBody("Tap to Play Again")
+        prompt.position = CGPoint(x: frame.midX, y: frame.midY + Theme.Layout.promptOffsetY)
         addChild(prompt)
     }
 

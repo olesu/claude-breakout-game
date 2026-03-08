@@ -10,21 +10,18 @@ final class GameScene: SKScene {
         backgroundColor = .black
 
         let title = SKLabelNode(text: "GAME SCENE")
-        title.fontName = "AvenirNext-Bold"
-        title.fontSize = 28
-        title.fontColor = .white
-        title.position = CGPoint(x: frame.midX, y: frame.midY + 60)
+        title.fontName = Theme.Font.bold
+        title.fontSize = Theme.FontSize.medium
+        title.fontColor = Theme.Color.primary
+        title.position = CGPoint(x: frame.midX, y: frame.midY + Theme.Layout.paddleOffsetY)
         addChild(title)
 
-        livesLabel = SKLabelNode(text: livesText)
-        livesLabel.fontName = "AvenirNext-Regular"
-        livesLabel.fontSize = 22
-        livesLabel.fontColor = .yellow
+        livesLabel = SKLabelNode.makeBody(livesText, color: Theme.Color.accent)
         livesLabel.position = CGPoint(x: frame.midX, y: frame.midY)
         addChild(livesLabel)
 
         paddle = PaddleNode(sceneWidth: frame.width)
-        paddle.position = CGPoint(x: frame.midX, y: frame.minY + 60)
+        paddle.position = CGPoint(x: frame.midX, y: frame.minY + Theme.Layout.paddleOffsetY)
         addChild(paddle)
 
         stateMachine.launch()

@@ -10,6 +10,9 @@ Architectural decisions and boundaries for the Breakout Game.
 - **Cohesion**: keep things that change together, together
 - **Abstraction**: look for better abstractions as the design emerges
 - **Coupling**: keep it balanced — loose where it matters, explicit where it helps
+- **Composition over inheritance**: favour composing behaviour from small, focused
+  types rather than building hierarchies; use extensions and protocols instead of
+  base classes
 
 These principles will naturally push game rules, state and data into plain Swift
 that has no dependency on SpriteKit or any other framework. That code will be
