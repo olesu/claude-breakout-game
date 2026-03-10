@@ -12,6 +12,7 @@ final class PaddleNode: SKSpriteNode {
         body.restitution = 1
         body.friction = 0
         body.categoryBitMask = PhysicsCategory.paddle
+        body.collisionBitMask = PhysicsCategory.ball
         physicsBody = body
     }
 

@@ -2,8 +2,8 @@ import SpriteKit
 
 final class GameScene: SKScene, SKPhysicsContactDelegate {
     private let stateMachine = GameStateMachine()
-    private var livesLabel: SKLabelNode!
-    private var scoreLabel: SKLabelNode!
+    private let level: Level = .one
+    private var hud: HUDNode!
     private var paddle: PaddleNode!
     private var ball: BallNode!
     private var bricks: [BrickNode] = []
@@ -18,17 +18,14 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
     }
 
     private func setupUI() {
-        let title = SKLabelNode.makeTitle("GAME SCENE")
+        let title = SKLabelNode.makeTitle(level.name)
         title.position = CGPoint(x: frame.midX, y: frame.midY + Theme.Layout.titleOffsetY)
+        title.run(.sequence([.wait(forDuration: 2), .fadeOut(withDuration: 0.5)]))
         addChild(title)
 
-        livesLabel = SKLabelNode.makeBody(livesText, color: Theme.Color.accent)
-        livesLabel.position = CGPoint(x: frame.midX, y: frame.midY)
-        addChild(livesLabel)
-
-        scoreLabel = SKLabelNode.makeBody(scoreText, color: Theme.Color.accent)
-        scoreLabel.position = CGPoint(x: frame.midX, y: frame.maxY - Theme.Layout.scoreOffsetY)
-        addChild(scoreLabel)
+        hud = HUDNode(sceneFrame: frame)
+        hud.update(lives: stateMachine.lives, score: stateMachine.score)
+        addChild(hud)
     }
 
     private func setupNodes() {
@@ -40,7 +37,7 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
         ball.position = restingBallPosition()
         addChild(ball)
 
-        setupBricks(level: .one)
+        setupBricks(level: level)
     }
 
     private func setupWalls() {
@@ -120,7 +117,7 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
         brick.removeFromParent()
         bricks.removeAll { $0 === brick }
         stateMachine.addScore(Theme.Layout.brickPoints)
-        scoreLabel.text = scoreText
+        hud.update(lives: stateMachine.lives, score: stateMachine.score)
 
         if bricks.isEmpty {
             present(GameSummaryScene(size: size, outcome: .victory))
@@ -145,12 +142,9 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
         )
     }
 
-    private var livesText: String { "Lives: \(stateMachine.lives)" }
-    private var scoreText: String { "Score: \(stateMachine.score)" }
-
     private func handleBallLoss() {
         stateMachine.ballLost()
-        livesLabel.text = livesText
+        hud.update(lives: stateMachine.lives, score: stateMachine.score)
 
         if stateMachine.state == .gameOver {
             present(GameSummaryScene(size: size, outcome: .gameOver))
