@@ -120,7 +120,7 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
         hud.update(lives: stateMachine.lives, score: stateMachine.score)
 
         if bricks.isEmpty {
-            present(GameSummaryScene(size: size, outcome: .victory))
+            present(GameSummaryScene(size: size, outcome: .victory, score: stateMachine.score))
         }
     }
 
@@ -147,7 +147,7 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
         hud.update(lives: stateMachine.lives, score: stateMachine.score)
 
         if stateMachine.state == .gameOver {
-            present(GameSummaryScene(size: size, outcome: .gameOver))
+            present(GameSummaryScene(size: size, outcome: .gameOver, score: stateMachine.score))
         }
     }
 }

@@ -4,9 +4,11 @@ enum GameOutcome { case victory, gameOver }
 
 final class GameSummaryScene: SKScene {
     private let outcome: GameOutcome
+    private let score: Int
 
-    init(size: CGSize, outcome: GameOutcome) {
+    init(size: CGSize, outcome: GameOutcome, score: Int) {
         self.outcome = outcome
+        self.score = score
         super.init(size: size)
     }
 
@@ -21,6 +23,10 @@ final class GameSummaryScene: SKScene {
         let title = SKLabelNode.makeTitle(titleText, color: titleColor)
         title.position = CGPoint(x: frame.midX, y: frame.midY + Theme.Layout.titleOffsetY)
         addChild(title)
+
+        let scoreLabel = SKLabelNode.makeBody("Score: \(score)", color: Theme.Color.primary)
+        scoreLabel.position = CGPoint(x: frame.midX, y: frame.midY)
+        addChild(scoreLabel)
 
         let prompt = SKLabelNode.makeBody("Tap to Play Again")
         prompt.position = CGPoint(x: frame.midX, y: frame.midY + Theme.Layout.promptOffsetY)
