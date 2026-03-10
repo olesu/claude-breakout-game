@@ -34,6 +34,7 @@ enum Theme {
         static let brickSideMargin: CGFloat = 8
         static let brickTopMargin: CGFloat = 120
         static let brickPoints: Int = 10
-        static let scoreOffsetY: CGFloat = 40
+        static let hudTopPadding: CGFloat = 8
+        static let hudSideMargin: CGFloat = 16
     }
 }

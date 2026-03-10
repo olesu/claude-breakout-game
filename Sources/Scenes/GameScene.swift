@@ -23,7 +23,7 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
         title.run(.sequence([.wait(forDuration: 2), .fadeOut(withDuration: 0.5)]))
         addChild(title)
 
-        hud = HUDNode(sceneFrame: frame)
+        hud = HUDNode(sceneFrame: frame, topSafeArea: view?.safeAreaInsets.top ?? 0)
         hud.update(lives: stateMachine.lives, score: stateMachine.score)
         addChild(hud)
     }
