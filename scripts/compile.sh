@@ -11,7 +11,7 @@ run_xcodebuild \
   -scheme "$SCHEME" \
   -destination "platform=iOS Simulator,name=$SIMULATOR" \
   -configuration Debug \
-  ENABLE_PREVIEWS=NO \
+  "$@" \
   build
 
 echo "==> Done."
