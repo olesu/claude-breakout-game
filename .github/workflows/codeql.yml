@@ -80,7 +80,7 @@ jobs:
     - name: Run manual build steps
       if: matrix.build-mode == 'manual'
       shell: bash
-      run: scripts/generate.sh && scripts/compile.sh -configuration Release
+      run: scripts/generate.sh && CONFIGURATION=Release scripts/compile.sh
 
     - name: Perform CodeQL Analysis
       uses: github/codeql-action/analyze@v4
