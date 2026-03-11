@@ -77,7 +77,7 @@ jobs:
         # queries: security-extended,security-and-quality
 
     - name: Install dependencies
-      run: brew install swiftlint xcodegen
+      run: arch -arm64 brew install swiftlint xcodegen
 
     - name: Run manual build steps
       if: matrix.build-mode == 'manual'
