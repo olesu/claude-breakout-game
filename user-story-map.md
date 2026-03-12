@@ -113,15 +113,19 @@ The MVP includes:
 
 ## v1.0 Launch Additions
 
-Beyond MVP:
+Beyond MVP, in priority order:
 
-- Main menu with named buttons
-- Sound toggle setting
-- Multiple levels with progression
-- Power-ups system
-- Tilt/accelerometer controls
-- High score tracking
-- Resume game functionality
+1. Multiple levels with progression
+2. High score tracking
+3. Resume game functionality
+4. Power-ups system
+5. Tilt/accelerometer controls *(skip if time-constrained)*
+
+Deferred (no longer in v1.0 scope):
+
+- Sound toggle setting — cut until sound is implemented
+- Main menu with named buttons — cut until there are multiple destinations to
+  navigate to
 
 ---
 
