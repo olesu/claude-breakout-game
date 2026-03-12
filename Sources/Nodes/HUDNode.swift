@@ -17,8 +17,8 @@ final class HUDNode: SKNode {
     }
 
     func update(lives: Int, score: Int) {
-        livesLabel.text = "Lives: \(lives)"
-        scoreLabel.text = "Score: \(score)"
+        livesLabel.text = livesText(lives)
+        scoreLabel.text = scoreText(score)
     }
 
     @available(*, unavailable)

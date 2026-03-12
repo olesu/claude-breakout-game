@@ -13,3 +13,7 @@ func brickPosition(
     let y = gridOrigin.y - CGFloat(row) * (size.height + spacing) - size.height / 2
     return CGPoint(x: x, y: y)
 }
+
+func brickGridOrigin(sceneMinX: CGFloat, sceneMaxY: CGFloat, margin: CGFloat) -> CGPoint {
+    CGPoint(x: sceneMinX + margin, y: sceneMaxY - Theme.Layout.brickTopMargin)
+}

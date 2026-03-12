@@ -72,8 +72,8 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
         let size = brickSize(
             sceneWidth: frame.width, columns: columns, spacing: spacing, margin: margin
         )
-        let gridOrigin = CGPoint(
-            x: frame.minX + margin, y: frame.maxY - Theme.Layout.brickTopMargin
+        let gridOrigin = brickGridOrigin(
+            sceneMinX: frame.minX, sceneMaxY: frame.maxY, margin: margin
         )
 
         for (rowIndex, row) in level.grid.enumerated() {

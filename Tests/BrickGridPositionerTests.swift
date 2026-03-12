@@ -58,4 +58,21 @@ struct BrickGridPositionerTests {
         #expect(isClose(pos.x, 294.75))
         #expect(isClose(pos.y, 394))
     }
+
+    // brickGridOrigin tests
+
+    @Test func brickGridOriginX() {
+        let o = brickGridOrigin(sceneMinX: 0, sceneMaxY: 800, margin: 8)
+        #expect(isClose(o.x, 8))
+    }
+
+    @Test func brickGridOriginY() {
+        let o = brickGridOrigin(sceneMinX: 0, sceneMaxY: 800, margin: 8)
+        #expect(isClose(o.y, 800 - Theme.Layout.brickTopMargin))
+    }
+
+    @Test func brickGridOriginRespectsNonZeroSceneMinX() {
+        let o = brickGridOrigin(sceneMinX: 10, sceneMaxY: 800, margin: 8)
+        #expect(isClose(o.x, 18))
+    }
 }

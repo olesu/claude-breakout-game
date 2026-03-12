@@ -24,7 +24,7 @@ final class GameSummaryScene: SKScene {
         title.position = CGPoint(x: frame.midX, y: frame.midY + Theme.Layout.titleOffsetY)
         addChild(title)
 
-        let scoreLabel = SKLabelNode.makeBody("Score: \(score)", color: Theme.Color.primary)
+        let scoreLabel = SKLabelNode.makeBody(scoreText(score), color: Theme.Color.primary)
         scoreLabel.position = CGPoint(x: frame.midX, y: frame.midY)
         addChild(scoreLabel)
 
