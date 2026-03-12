@@ -1,12 +1,25 @@
 import SpriteKit
 
 final class GameScene: SKScene, SKPhysicsContactDelegate {
-    private let stateMachine = GameStateMachine()
-    private let level: Level = .one
+    private let levelIndex: Int
+    private let level: Level
+    private let stateMachine: GameStateMachine
     private var hud: HUDNode!
     private var paddle: PaddleNode!
     private var ball: BallNode!
     private var bricks: [BrickNode] = []
+
+    private var levelComplete = false
+
+    init(size: CGSize, levelIndex: Int, stateMachine: GameStateMachine) {
+        self.levelIndex = levelIndex
+        self.level = Level.all[levelIndex]
+        self.stateMachine = stateMachine
+        super.init(size: size)
+    }
+
+    @available(*, unavailable)
+    required init?(coder aDecoder: NSCoder) { fatalError() }
 
     override func didMove(to view: SKView) {
         backgroundColor = .black
@@ -119,8 +132,15 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
         stateMachine.addScore(Theme.Layout.brickPoints)
         hud.update(lives: stateMachine.lives, score: stateMachine.score)
 
-        if bricks.isEmpty {
-            present(GameSummaryScene(size: size, outcome: .victory, score: stateMachine.score))
+        if bricks.isEmpty && !levelComplete {
+            levelComplete = true
+            let nextIndex = levelIndex + 1
+            if nextIndex < Level.all.count {
+                stateMachine.resetForNextLevel()
+                present(GameScene(size: size, levelIndex: nextIndex, stateMachine: stateMachine))
+            } else {
+                present(GameSummaryScene(size: size, outcome: .victory, score: stateMachine.score))
+            }
         }
     }
 

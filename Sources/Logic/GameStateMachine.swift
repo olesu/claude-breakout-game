@@ -28,4 +28,9 @@ class GameStateMachine {
         lives -= 1
         state = lives > 0 ? .waitingToLaunch : .gameOver
     }
+
+    func resetForNextLevel() {
+        guard state == .playing else { return }
+        state = .waitingToLaunch
+    }
 }

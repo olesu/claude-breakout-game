@@ -60,4 +60,26 @@ struct GameStateMachineTests {
         machine.addScore(10)
         #expect(machine.score == 0)
     }
+
+    @Test func resetForNextLevelTransitionsToWaitingToLaunch() {
+        let machine = GameStateMachine()
+        machine.launch()
+        machine.resetForNextLevel()
+        #expect(machine.state == .waitingToLaunch)
+    }
+
+    @Test func resetForNextLevelPreservesLivesAndScore() {
+        let machine = GameStateMachine(lives: 2)
+        machine.launch()
+        machine.addScore(50)
+        machine.resetForNextLevel()
+        #expect(machine.lives == 2)
+        #expect(machine.score == 50)
+    }
+
+    @Test func resetForNextLevelIgnoredWhenNotPlaying() {
+        let machine = GameStateMachine()
+        machine.resetForNextLevel()
+        #expect(machine.state == .waitingToLaunch)
+    }
 }
