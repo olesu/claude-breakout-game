@@ -77,9 +77,17 @@ struct GameStateMachineTests {
         #expect(machine.score == 50)
     }
 
-    @Test func resetForNextLevelIgnoredWhenNotPlaying() {
+    @Test func resetForNextLevelIgnoredWhenWaitingToLaunch() {
         let machine = GameStateMachine()
         machine.resetForNextLevel()
         #expect(machine.state == .waitingToLaunch)
+    }
+
+    @Test func resetForNextLevelIgnoredWhenGameOver() {
+        let machine = GameStateMachine(lives: 1)
+        machine.launch()
+        machine.ballLost()
+        machine.resetForNextLevel()
+        #expect(machine.state == .gameOver)
     }
 }

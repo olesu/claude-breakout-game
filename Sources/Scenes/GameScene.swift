@@ -4,6 +4,7 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
     private let levelIndex: Int
     private let level: Level
     private let stateMachine: GameStateMachine
+    // set in didMove(to:) via setupUI/setupNodes
     private var hud: HUDNode!
     private var paddle: PaddleNode!
     private var ball: BallNode!
@@ -12,6 +13,7 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
     private var levelComplete = false
 
     init(size: CGSize, levelIndex: Int, stateMachine: GameStateMachine) {
+        precondition(Level.all.indices.contains(levelIndex), "levelIndex out of range")
         self.levelIndex = levelIndex
         self.level = Level.all[levelIndex]
         self.stateMachine = stateMachine
@@ -110,6 +112,10 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
         } else if stateMachine.state == .playing && ball.position.y < frame.minY {
             handleBallLoss()
         }
+
+        if levelComplete {
+            advanceLevel()
+        }
     }
 
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
@@ -134,13 +140,6 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
 
         if bricks.isEmpty && !levelComplete {
             levelComplete = true
-            let nextIndex = levelIndex + 1
-            if nextIndex < Level.all.count {
-                stateMachine.resetForNextLevel()
-                present(GameScene(size: size, levelIndex: nextIndex, stateMachine: stateMachine))
-            } else {
-                present(GameSummaryScene(size: size, outcome: .victory, score: stateMachine.score))
-            }
         }
     }
 
@@ -160,6 +159,16 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
             paddleHalfHeight: paddle.size.height / 2,
             ballRadius: Theme.Layout.ballRadius
         )
+    }
+
+    private func advanceLevel() {
+        let nextIndex = levelIndex + 1
+        if nextIndex < Level.all.count {
+            stateMachine.resetForNextLevel()
+            present(GameScene(size: size, levelIndex: nextIndex, stateMachine: stateMachine))
+        } else {
+            present(GameSummaryScene(size: size, outcome: .victory, score: stateMachine.score))
+        }
     }
 
     private func handleBallLoss() {
