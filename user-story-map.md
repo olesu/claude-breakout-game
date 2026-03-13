@@ -129,6 +129,29 @@ Deferred (no longer in v1.0 scope):
 
 ---
 
+## Enhancement Ideas
+
+### Brick Variety
+
+Currently all bricks are destroyed in a single hit. Richer brick types would
+add strategic depth and level design options:
+
+- **Multi-hit bricks** — require 2+ hits to destroy; show visual damage state
+  (e.g. crack) after each hit so the player can track progress. Hit count
+  defined per-brick in level data.
+- **Indestructible bricks** — never destroyed; act as permanent obstacles that
+  force the ball to navigate around them. Useful for maze-like layouts.
+- **Bonus bricks** — destroyed in one hit like normal bricks, but guaranteed
+  to drop a power-up on destruction.
+
+Implementation approach: extend the `BrickType` (or equivalent) model with a
+`hits` property and an `isIndestructible` flag. The collision handler
+decrements `hits`; the brick is removed only when `hits` reaches zero (or
+never, if indestructible). Sprite appearance updates on each hit to reflect
+damage state.
+
+---
+
 ## Known Issues
 
 - **Shallow ball angle** — SpriteKit's elastic physics preserves the angle of incidence,
