@@ -28,6 +28,19 @@ final class GameSummaryScene: SKScene {
         scoreLabel.position = CGPoint(x: frame.midX, y: frame.midY)
         addChild(scoreLabel)
 
+        let store = HighScoreStore()
+        let isNewRecord = store.submitScore(score)
+        let highScoreColor = isNewRecord ? Theme.Color.accent : Theme.Color.secondary
+        let highScoreLabel = SKLabelNode.makeBody(
+            highScoreText(store.highScore),
+            color: highScoreColor
+        )
+        highScoreLabel.position = CGPoint(
+            x: frame.midX,
+            y: frame.midY + Theme.Layout.highScoreOffsetY
+        )
+        addChild(highScoreLabel)
+
         let prompt = SKLabelNode.makeBody("Tap to Play Again")
         prompt.position = CGPoint(x: frame.midX, y: frame.midY + Theme.Layout.promptOffsetY)
         addChild(prompt)

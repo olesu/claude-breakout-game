@@ -17,4 +17,12 @@ struct LabelFormatterTests {
     @Test func livesTextNonZero() {
         #expect(livesText(3) == "Lives: 3")
     }
+
+    @Test func highScoreTextZero() {
+        #expect(highScoreText(0) == "HIGH SCORE: 0")
+    }
+
+    @Test func highScoreTextNonZero() {
+        #expect(highScoreText(1500) == "HIGH SCORE: 1500")
+    }
 }

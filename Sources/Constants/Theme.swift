@@ -22,7 +22,7 @@ enum Theme {
 
     enum Layout {
         static let titleOffsetY: CGFloat = 40
-        static let promptOffsetY: CGFloat = -20
+        static let promptOffsetY: CGFloat = -60
         static let paddleOffsetY: CGFloat = 60
         static let paddleWidthRatio: CGFloat = 0.2
         static let paddleHeight: CGFloat = 14
@@ -36,5 +36,6 @@ enum Theme {
         static let brickPoints: Int = 10
         static let hudTopPadding: CGFloat = 8
         static let hudSideMargin: CGFloat = 16
+        static let highScoreOffsetY: CGFloat = -30
     }
 }
