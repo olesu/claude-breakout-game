@@ -21,7 +21,7 @@ enum Theme {
     }
 
     enum Symbol {
-        static let pause = "\u{23F8}"
+        static let pause = "II"
     }
 
     enum Layout {

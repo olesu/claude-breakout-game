@@ -171,6 +171,21 @@ Mac Catalyst is a faster path (hours vs. a weekend) but feels less native.
 
 ---
 
+### Two-Finger Tap to Pause
+
+The current pause button (top-right HUD) requires precise tapping while the
+ball is in play — high risk of losing a life while hunting for it.
+
+A two-finger tap anywhere on the screen would be a safer alternative: it is
+physically impossible to trigger accidentally with the single-finger paddle
+swipe, requires no visual targeting, and is a familiar gesture on iOS.
+
+Implementation: detect `touches.count == 2` in `touchesBegan` as a secondary
+pause-toggle path alongside the existing button. The button could remain as a
+visible affordance so players can discover the feature.
+
+---
+
 ## Known Issues
 
 - **Shallow ball angle** — SpriteKit's elastic physics preserves the angle of incidence,
