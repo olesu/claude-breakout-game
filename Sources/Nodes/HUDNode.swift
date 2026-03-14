@@ -4,6 +4,7 @@ final class HUDNode: SKNode {
     private let livesLabel: SKLabelNode
     private let scoreLabel: SKLabelNode
     private let pauseButton: SKLabelNode
+    private var lastScore: Int = 0
 
     init(sceneFrame: CGRect, topSafeArea: CGFloat) {
         livesLabel = SKLabelNode.makeBody("", color: Theme.Color.accent)
@@ -24,7 +25,16 @@ final class HUDNode: SKNode {
 
     func update(lives: Int, score: Int) {
         livesLabel.text = livesText(lives)
-        scoreLabel.text = scoreText(score)
+        if score != lastScore {
+            lastScore = score
+            scoreLabel.text = scoreText(score)
+            scoreLabel.removeAction(forKey: "scorePop")
+            let pop = SKAction.sequence([
+                .scale(to: 1.3, duration: 0.07),
+                .scale(to: 1.0, duration: 0.10)
+            ])
+            scoreLabel.run(pop, withKey: "scorePop")
+        }
     }
 
     @available(*, unavailable)

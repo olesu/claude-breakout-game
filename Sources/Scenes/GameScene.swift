@@ -100,7 +100,7 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
         for (rowIndex, row) in level.grid.enumerated() {
             for (colIndex, present) in row.enumerated() {
                 guard present else { continue }
-                let brick = BrickNode(size: size)
+                let brick = BrickNode(size: size, row: rowIndex)
                 brick.position = brickPosition(
                     column: colIndex, row: rowIndex,
                     size: size, spacing: spacing, gridOrigin: gridOrigin
@@ -161,15 +161,42 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
 
     func didBegin(_ contact: SKPhysicsContact) {
         let brick = (contact.bodyA.node as? BrickNode) ?? (contact.bodyB.node as? BrickNode)
-        guard let brick else { return }
-        brick.removeFromParent()
+        guard let brick, brick.physicsBody != nil else { return }
+        let brickColor = brick.color // capture before destroy animation alters colorBlendFactor
         bricks.removeAll { $0 === brick }
         stateMachine.addScore(Theme.Layout.brickPoints)
         hud.update(lives: stateMachine.lives, score: stateMachine.score)
-
-        if bricks.isEmpty && !levelComplete {
-            levelComplete = true
+        spawnScorePopup(at: contact.contactPoint, points: Theme.Layout.brickPoints)
+        spawnSparks(at: contact.contactPoint, color: brickColor)
+        brick.destroy { [weak self] in
+            guard let self else { return }
+            if bricks.isEmpty && !levelComplete {
+                levelComplete = true
+            }
         }
+    }
+
+    private func spawnScorePopup(at position: CGPoint, points: Int) {
+        let label = SKLabelNode(fontNamed: Theme.Font.bold)
+        label.text = "+\(points)"
+        label.fontSize = Theme.FontSize.small
+        label.fontColor = Theme.Color.accent
+        label.position = position
+        label.zPosition = 5
+        let move = SKAction.moveBy(x: 0, y: 40, duration: 0.6)
+        let fade = SKAction.sequence([.wait(forDuration: 0.2), .fadeOut(withDuration: 0.4)])
+        let remove = SKAction.removeFromParent()
+        label.run(.sequence([.group([move, fade]), remove]))
+        addChild(label)
+    }
+
+    private func spawnSparks(at position: CGPoint, color: UIColor) {
+        let emitter = makeBrickSparkEmitter(color: color)
+        emitter.position = position
+        addChild(emitter)
+        let wait = SKAction.wait(forDuration: 0.6)
+        let remove = SKAction.removeFromParent()
+        emitter.run(.sequence([wait, remove]))
     }
 
     private func movePaddle(to touches: Set<UITouch>) {

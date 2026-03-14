@@ -11,6 +11,11 @@ final class SplashScene: SKScene {
         let prompt = SKLabelNode.makeBody("Tap to Play")
         prompt.position = CGPoint(x: frame.midX, y: frame.midY + Theme.Layout.promptOffsetY)
         addChild(prompt)
+        let pulse = SKAction.sequence([
+            .fadeAlpha(to: 0.3, duration: 0.8),
+            .fadeAlpha(to: 1.0, duration: 0.8)
+        ])
+        prompt.run(.repeatForever(pulse))
 
         let store = HighScoreStore()
         if store.highScore > 0 {

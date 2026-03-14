@@ -18,6 +18,15 @@ enum Theme {
         static let accent: UIColor = .yellow
         static let danger: UIColor = .red
         static let brick: UIColor = .cyan
+        static let brickColors: [UIColor] = [
+            UIColor(red: 1.0, green: 0.35, blue: 0.35, alpha: 1), // coral-red
+            UIColor(red: 1.0, green: 0.6, blue: 0.1, alpha: 1), // orange
+            UIColor(red: 1.0, green: 0.95, blue: 0.2, alpha: 1), // yellow
+            UIColor(red: 0.2, green: 1.0, blue: 0.4, alpha: 1), // green
+            UIColor(red: 0.0, green: 0.95, blue: 1.0, alpha: 1), // cyan
+            UIColor(red: 0.5, green: 0.3, blue: 1.0, alpha: 1), // blue-violet
+            UIColor(red: 0.85, green: 0.2, blue: 1.0, alpha: 1) // purple
+        ]
     }
 
     enum Symbol {
