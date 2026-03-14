@@ -195,9 +195,7 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
 
         let involvesPaddle = contact.bodyA.categoryBitMask == PhysicsCategory.paddle
             || contact.bodyB.categoryBitMask == PhysicsCategory.paddle
-        let involvesBall = contact.bodyA.categoryBitMask == PhysicsCategory.ball
-            || contact.bodyB.categoryBitMask == PhysicsCategory.ball
-        if involvesPaddle && involvesBall {
+        if involvesPaddle {
             paddle.squash()
         }
     }
@@ -300,12 +298,13 @@ private extension GameScene {
         ring.fillColor = .clear
         ring.strokeColor = .white
         ring.lineWidth = lineWidth
-        ring.alpha = alpha
+        ring.alpha = 0
         ring.zPosition = 3
         ring.position = position
         addChild(ring)
         ring.run(.sequence([
             .wait(forDuration: delay),
+            .fadeAlpha(to: alpha, duration: 0),
             .group([
                 .scale(to: scale, duration: 0.5),
                 .fadeOut(withDuration: 0.5)
