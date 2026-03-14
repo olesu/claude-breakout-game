@@ -40,6 +40,13 @@ struct GameStateMachineTests {
         #expect(machine.score == 0)
     }
 
+    @Test func initWithCustomScoreAndLives() {
+        let machine = GameStateMachine(lives: 2, score: 150)
+        #expect(machine.lives == 2)
+        #expect(machine.score == 150)
+        #expect(machine.state == .waitingToLaunch)
+    }
+
     @Test func addScoreIncrementsWhilePlaying() {
         let machine = GameStateMachine()
         machine.launch()

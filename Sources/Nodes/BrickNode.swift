@@ -1,7 +1,12 @@
 import SpriteKit
 
 final class BrickNode: SKSpriteNode {
-    init(size: CGSize, row: Int) {
+    let row: Int
+    let col: Int
+
+    init(size: CGSize, row: Int, col: Int) {
+        self.row = row
+        self.col = col
         let rowColor = Theme.Color.brickColors[row % Theme.Color.brickColors.count]
         super.init(texture: nil, color: rowColor, size: size)
         let body = SKPhysicsBody(rectangleOf: size)

@@ -50,5 +50,6 @@ enum Theme {
         static let hudTopPadding: CGFloat = 8
         static let hudSideMargin: CGFloat = 16
         static let highScoreOffsetY: CGFloat = -30
+        static let splashButtonSpacing: CGFloat = 44
     }
 }

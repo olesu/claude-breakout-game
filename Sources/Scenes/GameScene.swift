@@ -13,12 +13,21 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
     private var bricks: [BrickNode] = []
 
     private var levelComplete = false
+    private let saveStore = GameSaveStore()
 
-    init(size: CGSize, levelIndex: Int, stateMachine: GameStateMachine) {
+    private let savedBrickGrid: [[Bool]]?
+
+    init(
+        size: CGSize,
+        levelIndex: Int,
+        stateMachine: GameStateMachine,
+        savedBrickGrid: [[Bool]]? = nil
+    ) {
         precondition(Level.all.indices.contains(levelIndex), "levelIndex out of range")
         self.levelIndex = levelIndex
         self.level = Level.all[levelIndex]
         self.stateMachine = stateMachine
+        self.savedBrickGrid = savedBrickGrid
         super.init(size: size)
     }
 
@@ -114,10 +123,16 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
             sceneMinX: frame.minX, sceneMaxY: frame.maxY, margin: margin
         )
 
-        for (rowIndex, row) in level.grid.enumerated() {
+        let validSavedGrid = savedBrickGrid.flatMap { saved -> [[Bool]]? in
+            guard saved.count == level.grid.count,
+                  saved.first?.count == level.grid.first?.count else { return nil }
+            return saved
+        }
+        let grid = validSavedGrid ?? level.grid
+        for (rowIndex, row) in grid.enumerated() {
             for (colIndex, present) in row.enumerated() {
                 guard present else { continue }
-                let brick = BrickNode(size: size, row: rowIndex)
+                let brick = BrickNode(size: size, row: rowIndex, col: colIndex)
                 brick.position = brickPosition(
                     column: colIndex, row: rowIndex,
                     size: size, spacing: spacing, gridOrigin: gridOrigin
@@ -218,6 +233,31 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
         let isPaused = stateMachine.state == .paused
         physicsWorld.speed = isPaused ? 0 : 1
         pauseOverlay.isHidden = !isPaused
+        if isPaused { saveGame() }
+    }
+
+    override func willMove(from view: SKView) {
+        // Skip if already saved by applyPauseState(), or if game has ended / level is advancing.
+        guard !levelComplete
+            && stateMachine.state != .gameOver
+            && stateMachine.state != .paused else { return }
+        saveGame()
+    }
+
+    private func saveGame() {
+        var grid = Array(
+            repeating: Array(repeating: false, count: level.grid[0].count),
+            count: level.grid.count
+        )
+        for brick in bricks {
+            grid[brick.row][brick.col] = true
+        }
+        saveStore.save(SavedGame(
+            levelIndex: levelIndex,
+            score: stateMachine.score,
+            lives: stateMachine.lives,
+            brickGrid: grid
+        ))
     }
 
     private func handleBallLoss() {
@@ -226,6 +266,7 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
         hud.update(lives: stateMachine.lives, score: stateMachine.score)
 
         if stateMachine.state == .gameOver {
+            saveStore.clear()
             present(GameSummaryScene(size: size, outcome: .gameOver, score: stateMachine.score))
         }
     }
@@ -236,6 +277,7 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
             stateMachine.resetForNextLevel()
             present(GameScene(size: size, levelIndex: nextIndex, stateMachine: stateMachine))
         } else {
+            saveStore.clear()
             present(GameSummaryScene(size: size, outcome: .victory, score: stateMachine.score))
         }
     }
