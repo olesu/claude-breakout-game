@@ -4,7 +4,7 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
     private let levelIndex: Int
     private let level: Level
     private let stateMachine: GameStateMachine
-    // set in didMove(to:) via setupUI/setupNodes
+    // set in didMove(to:): gameCamera via setupCamera(), others via setupUI()/setupNodes()
     private var gameCamera: SKCameraNode!
     private var hud: HUDNode!
     private var pauseOverlay: PauseOverlayNode!
@@ -24,6 +24,8 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
 
     @available(*, unavailable)
     required init?(coder aDecoder: NSCoder) { fatalError() }
+
+    // MARK: - Setup
 
     override func didMove(to view: SKView) {
         setupCamera()
@@ -60,7 +62,6 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
         gameCamera.addChild(hud)
 
         pauseOverlay = PauseOverlayNode(sceneSize: size)
-        pauseOverlay.position = CGPoint(x: 0, y: 0)
         pauseOverlay.isHidden = true
         gameCamera.addChild(pauseOverlay)
     }
@@ -127,6 +128,8 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
         }
     }
 
+    // MARK: - Game loop
+
     override func update(_ currentTime: TimeInterval) {
         // physicsWorld.speed handles physics; guard prevents state logic from running while paused.
         guard stateMachine.state != .paused else { return }
@@ -141,6 +144,8 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
             advanceLevel()
         }
     }
+
+    // MARK: - Touch handling
 
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
         guard let touch = touches.first else { return }
@@ -170,36 +175,6 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
         movePaddle(to: touches)
     }
 
-    private func applyPauseState() {
-        let isPaused = stateMachine.state == .paused
-        physicsWorld.speed = isPaused ? 0 : 1
-        pauseOverlay.isHidden = !isPaused
-    }
-
-    func didBegin(_ contact: SKPhysicsContact) {
-        if let brick = (contact.bodyA.node as? BrickNode) ?? (contact.bodyB.node as? BrickNode),
-           brick.physicsBody != nil {
-            let brickColor = brick.color // capture before destroy animation alters colorBlendFactor
-            bricks.removeAll { $0 === brick }
-            stateMachine.addScore(Theme.Layout.brickPoints)
-            hud.update(lives: stateMachine.lives, score: stateMachine.score)
-            spawnScorePopup(at: contact.contactPoint, points: Theme.Layout.brickPoints)
-            spawnSparks(at: contact.contactPoint, color: brickColor)
-            brick.destroy { [weak self] in
-                guard let self else { return }
-                if bricks.isEmpty && !levelComplete {
-                    levelComplete = true
-                }
-            }
-        }
-
-        let involvesPaddle = contact.bodyA.categoryBitMask == PhysicsCategory.paddle
-            || contact.bodyB.categoryBitMask == PhysicsCategory.paddle
-        if involvesPaddle {
-            paddle.squash()
-        }
-    }
-
     private func movePaddle(to touches: Set<UITouch>) {
         guard let touch = touches.first else { return }
         let x = clampedPaddleX(
@@ -210,22 +185,39 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
         paddle.position.x = x
     }
 
-    private func restingBallPosition() -> CGPoint {
-        ballRestingPosition(
-            paddlePosition: paddle.position,
-            paddleHalfHeight: paddle.size.height / 2,
-            ballRadius: Theme.Layout.ballRadius
-        )
+    // MARK: - Physics contact
+
+    func didBegin(_ contact: SKPhysicsContact) {
+        if let brick = (contact.bodyA.node as? BrickNode) ?? (contact.bodyB.node as? BrickNode),
+           brick.physicsBody != nil {
+            handleBrickContact(brick, contactPoint: contact.contactPoint)
+        } else if contact.bodyA.categoryBitMask == PhysicsCategory.paddle
+            || contact.bodyB.categoryBitMask == PhysicsCategory.paddle {
+            paddle.squash()
+        }
     }
 
-    private func advanceLevel() {
-        let nextIndex = levelIndex + 1
-        if nextIndex < Level.all.count {
-            stateMachine.resetForNextLevel()
-            present(GameScene(size: size, levelIndex: nextIndex, stateMachine: stateMachine))
-        } else {
-            present(GameSummaryScene(size: size, outcome: .victory, score: stateMachine.score))
+    private func handleBrickContact(_ brick: BrickNode, contactPoint: CGPoint) {
+        let brickColor = brick.color // capture before destroy animation alters colorBlendFactor
+        bricks.removeAll { $0 === brick }
+        stateMachine.addScore(Theme.Layout.brickPoints)
+        hud.update(lives: stateMachine.lives, score: stateMachine.score)
+        spawnScorePopup(at: contactPoint, points: Theme.Layout.brickPoints)
+        spawnSparks(at: contactPoint, color: brickColor)
+        brick.destroy { [weak self] in
+            guard let self else { return }
+            if bricks.isEmpty && !levelComplete {
+                levelComplete = true
+            }
         }
+    }
+
+    // MARK: - Game lifecycle
+
+    private func applyPauseState() {
+        let isPaused = stateMachine.state == .paused
+        physicsWorld.speed = isPaused ? 0 : 1
+        pauseOverlay.isHidden = !isPaused
     }
 
     private func handleBallLoss() {
@@ -238,7 +230,29 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
         }
     }
 
-    private func shakeCamera(duration: TimeInterval = 0.4, magnitude: CGFloat = 12) {
+    private func advanceLevel() {
+        let nextIndex = levelIndex + 1
+        if nextIndex < Level.all.count {
+            stateMachine.resetForNextLevel()
+            present(GameScene(size: size, levelIndex: nextIndex, stateMachine: stateMachine))
+        } else {
+            present(GameSummaryScene(size: size, outcome: .victory, score: stateMachine.score))
+        }
+    }
+
+    private func restingBallPosition() -> CGPoint {
+        ballRestingPosition(
+            paddlePosition: paddle.position,
+            paddleHalfHeight: paddle.size.height / 2,
+            ballRadius: Theme.Layout.ballRadius
+        )
+    }
+}
+
+// MARK: - Visual effects
+
+private extension GameScene {
+    func shakeCamera(duration: TimeInterval = 0.4, magnitude: CGFloat = 12) {
         let origin = CGPoint(x: frame.midX, y: frame.midY)
         let count = 6
         let step = duration / Double(count)
@@ -254,11 +268,7 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
         actions.append(.move(to: origin, duration: step))
         gameCamera.run(.sequence(actions), withKey: "shake")
     }
-}
 
-// MARK: - Particle helpers
-
-private extension GameScene {
     func spawnScorePopup(at position: CGPoint, points: Int) {
         let label = SKLabelNode(fontNamed: Theme.Font.bold)
         label.text = "+\(points)"
