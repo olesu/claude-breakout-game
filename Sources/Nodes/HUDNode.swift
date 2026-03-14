@@ -6,17 +6,17 @@ final class HUDNode: SKNode {
     private let pauseButton: SKLabelNode
     private var lastScore: Int = 0
 
-    init(sceneFrame: CGRect, topSafeArea: CGFloat) {
+    init(sceneSize: CGSize, topSafeArea: CGFloat) {
         livesLabel = SKLabelNode.makeBody("", color: Theme.Color.accent)
         scoreLabel = SKLabelNode.makeBody("", color: Theme.Color.accent)
         pauseButton = SKLabelNode.makeBody(Theme.Symbol.pause, color: Theme.Color.primary)
         super.init()
-        let hudY = sceneFrame.maxY - topSafeArea - Theme.Layout.hudTopPadding
+        let hudY = sceneSize.height / 2 - topSafeArea - Theme.Layout.hudTopPadding
         livesLabel.horizontalAlignmentMode = .left
-        livesLabel.position = CGPoint(x: sceneFrame.minX + Theme.Layout.hudSideMargin, y: hudY)
-        scoreLabel.position = CGPoint(x: sceneFrame.midX, y: hudY)
+        livesLabel.position = CGPoint(x: -sceneSize.width / 2 + Theme.Layout.hudSideMargin, y: hudY)
+        scoreLabel.position = CGPoint(x: 0, y: hudY)
         pauseButton.horizontalAlignmentMode = .right
-        pauseButton.position = CGPoint(x: sceneFrame.maxX - Theme.Layout.hudSideMargin, y: hudY)
+        pauseButton.position = CGPoint(x: sceneSize.width / 2 - Theme.Layout.hudSideMargin, y: hudY)
         pauseButton.name = "pauseButton"
         addChild(livesLabel)
         addChild(scoreLabel)

@@ -13,7 +13,17 @@ final class PaddleNode: SKSpriteNode {
         body.friction = 0
         body.categoryBitMask = PhysicsCategory.paddle
         body.collisionBitMask = PhysicsCategory.ball
+        body.contactTestBitMask = PhysicsCategory.ball
         physicsBody = body
+    }
+
+    func squash() {
+        removeAction(forKey: "squash")
+        run(.sequence([
+            .scaleY(to: 0.45, duration: 0.06),
+            .scaleY(to: 1.10, duration: 0.08),
+            .scaleY(to: 1.00, duration: 0.06)
+        ]), withKey: "squash")
     }
 
     @available(*, unavailable)

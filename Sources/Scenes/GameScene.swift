@@ -5,6 +5,7 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
     private let level: Level
     private let stateMachine: GameStateMachine
     // set in didMove(to:) via setupUI/setupNodes
+    private var gameCamera: SKCameraNode!
     private var hud: HUDNode!
     private var pauseOverlay: PauseOverlayNode!
     private var paddle: PaddleNode!
@@ -25,6 +26,7 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
     required init?(coder aDecoder: NSCoder) { fatalError() }
 
     override func didMove(to view: SKView) {
+        setupCamera()
         backgroundColor = .black
         physicsWorld.gravity = .zero
         physicsWorld.contactDelegate = self
@@ -33,20 +35,34 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
         setupNodes()
     }
 
+    private func setupCamera() {
+        let cam = SKCameraNode()
+        cam.position = CGPoint(x: frame.midX, y: frame.midY)
+        addChild(cam)
+        self.camera = cam
+        gameCamera = cam
+    }
+
     private func setupUI() {
         let title = SKLabelNode.makeTitle(level.name)
-        title.position = CGPoint(x: frame.midX, y: frame.midY + Theme.Layout.titleOffsetY)
-        title.run(.sequence([.wait(forDuration: 2), .fadeOut(withDuration: 0.5)]))
+        let finalPosition = CGPoint(x: frame.midX, y: frame.midY + Theme.Layout.titleOffsetY)
+        title.position = CGPoint(x: finalPosition.x, y: finalPosition.y - 60)
+        title.alpha = 0
+        let entry = SKAction.group([
+            .fadeIn(withDuration: 0.35),
+            .move(to: finalPosition, duration: 0.35)
+        ])
+        title.run(.sequence([entry, .wait(forDuration: 1.5), .fadeOut(withDuration: 0.5)]))
         addChild(title)
 
-        hud = HUDNode(sceneFrame: frame, topSafeArea: view?.safeAreaInsets.top ?? 0)
+        hud = HUDNode(sceneSize: size, topSafeArea: view?.safeAreaInsets.top ?? 0)
         hud.update(lives: stateMachine.lives, score: stateMachine.score)
-        addChild(hud)
+        gameCamera.addChild(hud)
 
         pauseOverlay = PauseOverlayNode(sceneSize: size)
-        pauseOverlay.position = CGPoint(x: frame.midX, y: frame.midY)
+        pauseOverlay.position = CGPoint(x: 0, y: 0)
         pauseOverlay.isHidden = true
-        addChild(pauseOverlay)
+        gameCamera.addChild(pauseOverlay)
     }
 
     private func setupNodes() {
@@ -143,6 +159,7 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
         guard stateMachine.state != .paused else { return }
         movePaddle(to: touches)
         if stateMachine.state == .waitingToLaunch {
+            spawnLaunchRipple(at: ball.position)
             stateMachine.launch()
             ball.physicsBody?.velocity = Theme.Layout.ballLaunchVelocity
         }
@@ -160,43 +177,29 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
     }
 
     func didBegin(_ contact: SKPhysicsContact) {
-        let brick = (contact.bodyA.node as? BrickNode) ?? (contact.bodyB.node as? BrickNode)
-        guard let brick, brick.physicsBody != nil else { return }
-        let brickColor = brick.color // capture before destroy animation alters colorBlendFactor
-        bricks.removeAll { $0 === brick }
-        stateMachine.addScore(Theme.Layout.brickPoints)
-        hud.update(lives: stateMachine.lives, score: stateMachine.score)
-        spawnScorePopup(at: contact.contactPoint, points: Theme.Layout.brickPoints)
-        spawnSparks(at: contact.contactPoint, color: brickColor)
-        brick.destroy { [weak self] in
-            guard let self else { return }
-            if bricks.isEmpty && !levelComplete {
-                levelComplete = true
+        if let brick = (contact.bodyA.node as? BrickNode) ?? (contact.bodyB.node as? BrickNode),
+           brick.physicsBody != nil {
+            let brickColor = brick.color // capture before destroy animation alters colorBlendFactor
+            bricks.removeAll { $0 === brick }
+            stateMachine.addScore(Theme.Layout.brickPoints)
+            hud.update(lives: stateMachine.lives, score: stateMachine.score)
+            spawnScorePopup(at: contact.contactPoint, points: Theme.Layout.brickPoints)
+            spawnSparks(at: contact.contactPoint, color: brickColor)
+            brick.destroy { [weak self] in
+                guard let self else { return }
+                if bricks.isEmpty && !levelComplete {
+                    levelComplete = true
+                }
             }
         }
-    }
 
-    private func spawnScorePopup(at position: CGPoint, points: Int) {
-        let label = SKLabelNode(fontNamed: Theme.Font.bold)
-        label.text = "+\(points)"
-        label.fontSize = Theme.FontSize.small
-        label.fontColor = Theme.Color.accent
-        label.position = position
-        label.zPosition = 5
-        let move = SKAction.moveBy(x: 0, y: 40, duration: 0.6)
-        let fade = SKAction.sequence([.wait(forDuration: 0.2), .fadeOut(withDuration: 0.4)])
-        let remove = SKAction.removeFromParent()
-        label.run(.sequence([.group([move, fade]), remove]))
-        addChild(label)
-    }
-
-    private func spawnSparks(at position: CGPoint, color: UIColor) {
-        let emitter = makeBrickSparkEmitter(color: color)
-        emitter.position = position
-        addChild(emitter)
-        let wait = SKAction.wait(forDuration: 0.6)
-        let remove = SKAction.removeFromParent()
-        emitter.run(.sequence([wait, remove]))
+        let involvesPaddle = contact.bodyA.categoryBitMask == PhysicsCategory.paddle
+            || contact.bodyB.categoryBitMask == PhysicsCategory.paddle
+        let involvesBall = contact.bodyA.categoryBitMask == PhysicsCategory.ball
+            || contact.bodyB.categoryBitMask == PhysicsCategory.ball
+        if involvesPaddle && involvesBall {
+            paddle.squash()
+        }
     }
 
     private func movePaddle(to touches: Set<UITouch>) {
@@ -228,11 +231,86 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
     }
 
     private func handleBallLoss() {
+        shakeCamera()
         stateMachine.ballLost()
         hud.update(lives: stateMachine.lives, score: stateMachine.score)
 
         if stateMachine.state == .gameOver {
             present(GameSummaryScene(size: size, outcome: .gameOver, score: stateMachine.score))
         }
+    }
+
+    private func shakeCamera(duration: TimeInterval = 0.4, magnitude: CGFloat = 12) {
+        let origin = CGPoint(x: frame.midX, y: frame.midY)
+        let count = 6
+        let step = duration / Double(count)
+        var actions: [SKAction] = []
+        for i in 0..<count {
+            let sign: CGFloat = i % 2 == 0 ? 1 : -1
+            let decay = magnitude * (1 - CGFloat(i) / CGFloat(count))
+            actions.append(.move(
+                to: CGPoint(x: origin.x + sign * decay, y: origin.y + sign * decay * 0.5),
+                duration: step
+            ))
+        }
+        actions.append(.move(to: origin, duration: step))
+        gameCamera.run(.sequence(actions), withKey: "shake")
+    }
+}
+
+// MARK: - Particle helpers
+
+private extension GameScene {
+    func spawnScorePopup(at position: CGPoint, points: Int) {
+        let label = SKLabelNode(fontNamed: Theme.Font.bold)
+        label.text = "+\(points)"
+        label.fontSize = Theme.FontSize.small
+        label.fontColor = Theme.Color.accent
+        label.position = position
+        label.zPosition = 5
+        let move = SKAction.moveBy(x: 0, y: 40, duration: 0.6)
+        let fade = SKAction.sequence([.wait(forDuration: 0.2), .fadeOut(withDuration: 0.4)])
+        let remove = SKAction.removeFromParent()
+        label.run(.sequence([.group([move, fade]), remove]))
+        addChild(label)
+    }
+
+    func spawnSparks(at position: CGPoint, color: UIColor) {
+        let emitter = makeBrickSparkEmitter(color: color)
+        emitter.position = position
+        addChild(emitter)
+        let wait = SKAction.wait(forDuration: 0.6)
+        let remove = SKAction.removeFromParent()
+        emitter.run(.sequence([wait, remove]))
+    }
+
+    func spawnLaunchRipple(at position: CGPoint) {
+        spawnRippleRing(at: position, delay: 0, scale: 4.0, alpha: 1.0, lineWidth: 2.0)
+        spawnRippleRing(at: position, delay: 0.12, scale: 5.0, alpha: 0.6, lineWidth: 1.5)
+    }
+
+    func spawnRippleRing(
+        at position: CGPoint,
+        delay: TimeInterval,
+        scale: CGFloat,
+        alpha: CGFloat,
+        lineWidth: CGFloat
+    ) {
+        let ring = SKShapeNode(circleOfRadius: Theme.Layout.ballRadius)
+        ring.fillColor = .clear
+        ring.strokeColor = .white
+        ring.lineWidth = lineWidth
+        ring.alpha = alpha
+        ring.zPosition = 3
+        ring.position = position
+        addChild(ring)
+        ring.run(.sequence([
+            .wait(forDuration: delay),
+            .group([
+                .scale(to: scale, duration: 0.5),
+                .fadeOut(withDuration: 0.5)
+            ]),
+            .removeFromParent()
+        ]))
     }
 }
