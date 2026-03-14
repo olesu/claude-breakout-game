@@ -20,6 +20,10 @@ enum Theme {
         static let brick: UIColor = .cyan
     }
 
+    enum Symbol {
+        static let pause = "\u{23F8}"
+    }
+
     enum Layout {
         static let titleOffsetY: CGFloat = 40
         static let promptOffsetY: CGFloat = -60

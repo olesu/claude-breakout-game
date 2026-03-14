@@ -6,6 +6,7 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
     private let stateMachine: GameStateMachine
     // set in didMove(to:) via setupUI/setupNodes
     private var hud: HUDNode!
+    private var pauseOverlay: PauseOverlayNode!
     private var paddle: PaddleNode!
     private var ball: BallNode!
     private var bricks: [BrickNode] = []
@@ -41,6 +42,11 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
         hud = HUDNode(sceneFrame: frame, topSafeArea: view?.safeAreaInsets.top ?? 0)
         hud.update(lives: stateMachine.lives, score: stateMachine.score)
         addChild(hud)
+
+        pauseOverlay = PauseOverlayNode(sceneSize: size)
+        pauseOverlay.position = CGPoint(x: frame.midX, y: frame.midY)
+        pauseOverlay.isHidden = true
+        addChild(pauseOverlay)
     }
 
     private func setupNodes() {
@@ -106,6 +112,8 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
     }
 
     override func update(_ currentTime: TimeInterval) {
+        // physicsWorld.speed handles physics; guard prevents state logic from running while paused.
+        guard stateMachine.state != .paused else { return }
         if stateMachine.state == .waitingToLaunch {
             ball.physicsBody?.velocity = .zero
             ball.position = restingBallPosition()
@@ -119,6 +127,20 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
     }
 
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
+        guard let touch = touches.first else { return }
+        // Only the pause button toggles pause; taps elsewhere are suppressed while paused.
+        if nodes(at: touch.location(in: self)).contains(where: { $0.name == "pauseButton" }) {
+            if stateMachine.state == .playing {
+                stateMachine.pause()
+                applyPauseState()
+                return
+            } else if stateMachine.state == .paused {
+                stateMachine.resume()
+                applyPauseState()
+                return
+            }
+        }
+        guard stateMachine.state != .paused else { return }
         movePaddle(to: touches)
         if stateMachine.state == .waitingToLaunch {
             stateMachine.launch()
@@ -127,7 +149,14 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
     }
 
     override func touchesMoved(_ touches: Set<UITouch>, with event: UIEvent?) {
+        guard stateMachine.state != .paused else { return }
         movePaddle(to: touches)
+    }
+
+    private func applyPauseState() {
+        let isPaused = stateMachine.state == .paused
+        physicsWorld.speed = isPaused ? 0 : 1
+        pauseOverlay.isHidden = !isPaused
     }
 
     func didBegin(_ contact: SKPhysicsContact) {

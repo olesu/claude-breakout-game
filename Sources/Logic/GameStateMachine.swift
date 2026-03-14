@@ -1,6 +1,7 @@
 enum GameState: Equatable {
     case waitingToLaunch
     case playing
+    case paused
     case gameOver
 }
 
@@ -27,6 +28,16 @@ class GameStateMachine {
         guard state == .playing else { return }
         lives -= 1
         state = lives > 0 ? .waitingToLaunch : .gameOver
+    }
+
+    func pause() {
+        guard state == .playing else { return }
+        state = .paused
+    }
+
+    func resume() {
+        guard state == .paused else { return }
+        state = .playing
     }
 
     func resetForNextLevel() {

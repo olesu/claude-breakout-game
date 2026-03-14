@@ -90,4 +90,48 @@ struct GameStateMachineTests {
         machine.resetForNextLevel()
         #expect(machine.state == .gameOver)
     }
+
+    @Test func pauseTransitionsFromPlayingToPaused() {
+        let machine = GameStateMachine()
+        machine.launch()
+        machine.pause()
+        #expect(machine.state == .paused)
+    }
+
+    @Test func resumeTransitionsFromPausedToPlaying() {
+        let machine = GameStateMachine()
+        machine.launch()
+        machine.pause()
+        machine.resume()
+        #expect(machine.state == .playing)
+    }
+
+    @Test func pauseIgnoredWhenNotPlaying() {
+        let machine = GameStateMachine()
+        machine.pause()
+        #expect(machine.state == .waitingToLaunch)
+    }
+
+    @Test func pauseIgnoredWhenGameOver() {
+        let machine = GameStateMachine(lives: 1)
+        machine.launch()
+        machine.ballLost()
+        machine.pause()
+        #expect(machine.state == .gameOver)
+    }
+
+    @Test func resumeIgnoredWhenNotPaused() {
+        let machine = GameStateMachine()
+        machine.launch()
+        machine.resume()
+        #expect(machine.state == .playing)
+    }
+
+    @Test func addScoreIgnoredWhenPaused() {
+        let machine = GameStateMachine()
+        machine.launch()
+        machine.pause()
+        machine.addScore(10)
+        #expect(machine.score == 0)
+    }
 }
