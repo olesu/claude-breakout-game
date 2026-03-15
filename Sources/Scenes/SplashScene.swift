@@ -67,19 +67,18 @@ final class SplashScene: SKScene {
         if let game = savedGame {
             let tapped = nodes(at: touch.location(in: self))
             if tapped.contains(where: { $0.name == "resumeButton" }) {
-                let machine = GameStateMachine(lives: game.lives, score: game.score)
                 present(GameScene(
                     size: size,
                     levelIndex: game.levelIndex,
-                    stateMachine: machine,
+                    gameState: GameState(lives: game.lives, score: game.score),
                     savedBrickGrid: game.brickGrid
                 ))
             } else if tapped.contains(where: { $0.name == "newGameButton" }) {
                 saveStore.clear()
-                present(GameScene(size: size, levelIndex: 0, stateMachine: GameStateMachine()))
+                present(GameScene(size: size, levelIndex: 0, gameState: GameState()))
             }
         } else {
-            present(GameScene(size: size, levelIndex: 0, stateMachine: GameStateMachine()))
+            present(GameScene(size: size, levelIndex: 0, gameState: GameState()))
         }
     }
 }

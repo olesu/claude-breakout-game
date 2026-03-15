@@ -3,7 +3,7 @@ import SpriteKit
 final class GameScene: SKScene, SKPhysicsContactDelegate {
     private let levelIndex: Int
     private let level: Level
-    private let stateMachine: GameStateMachine
+    private var gameState: GameState
     private var gameCamera: GameCameraNode!
     private var paddle: PaddleNode!
     private var ball: BallNode!
@@ -17,13 +17,13 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
     init(
         size: CGSize,
         levelIndex: Int,
-        stateMachine: GameStateMachine,
+        gameState: GameState,
         savedBrickGrid: [[Bool]]? = nil
     ) {
         precondition(Level.all.indices.contains(levelIndex), "levelIndex out of range")
         self.levelIndex = levelIndex
         self.level = Level.all[levelIndex]
-        self.stateMachine = stateMachine
+        self.gameState = gameState
         self.savedBrickGrid = savedBrickGrid
         super.init(size: size)
     }
@@ -40,7 +40,7 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
         addChild(cam)
         camera = cam
         gameCamera = cam
-        gameCamera.updateHUD(lives: stateMachine.lives, score: stateMachine.score)
+        gameCamera.updateHUD(lives: gameState.lives, score: gameState.score)
         backgroundColor = .black
         physicsWorld.gravity = .zero
         physicsWorld.contactDelegate = self
@@ -67,15 +67,15 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
 
     override func update(_ currentTime: TimeInterval) {
         // physicsWorld.speed handles physics; guard prevents state logic from running while paused.
-        guard stateMachine.state != .paused else { return }
+        guard gameState.phase != .paused else { return }
 
         let delta = lastUpdateTime == 0 ? 0 : currentTime - lastUpdateTime
         lastUpdateTime = currentTime
 
-        if stateMachine.state == .waitingToLaunch {
+        if gameState.phase == .waitingToLaunch {
             ball.physicsBody?.velocity = .zero
             ball.position = restingBallPosition()
-        } else if stateMachine.state == .playing && ball.position.y < frame.minY {
+        } else if gameState.phase == .playing && ball.position.y < frame.minY {
             handleBallLoss()
         }
 
@@ -92,27 +92,28 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
         guard let touch = touches.first else { return }
         // Only the pause button toggles pause; taps elsewhere are suppressed while paused.
         if nodes(at: touch.location(in: self)).contains(where: { $0.name == "pauseButton" }) {
-            if stateMachine.state == .playing {
-                stateMachine.pause()
+            if gameState.phase == .playing {
+                gameState = gameState.pause()
                 applyPauseState()
                 return
-            } else if stateMachine.state == .paused {
-                stateMachine.resume()
+            } else if gameState.phase == .paused {
+                gameState = gameState.resume()
                 applyPauseState()
                 return
             }
         }
-        guard stateMachine.state != .paused else { return }
+        guard gameState.phase != .paused else { return }
         movePaddle(to: touches)
-        if stateMachine.state == .waitingToLaunch {
+        if gameState.phase == .waitingToLaunch {
             spawnLaunchRipple(at: ball.position)
-            stateMachine.launch()
+            gameState = gameState.launch()
+            gameCamera.updateHUD(lives: gameState.lives, score: gameState.score)
             ball.physicsBody?.velocity = Theme.Layout.ballLaunchVelocity
         }
     }
 
     override func touchesMoved(_ touches: Set<UITouch>, with event: UIEvent?) {
-        guard stateMachine.state != .paused else { return }
+        guard gameState.phase != .paused else { return }
         movePaddle(to: touches)
     }
 
@@ -145,7 +146,7 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
     // MARK: - Game lifecycle
 
     private func applyPauseState() {
-        let isPaused = stateMachine.state == .paused
+        let isPaused = gameState.phase == .paused
         physicsWorld.speed = isPaused ? 0 : 1
         gameCamera.setPaused(isPaused)
         if isPaused {
@@ -158,8 +159,8 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
     override func willMove(from view: SKView) {
         // Skip if already saved by applyPauseState(), or if game has ended / level is advancing.
         guard !levelComplete
-            && stateMachine.state != .gameOver
-            && stateMachine.state != .paused else { return }
+            && gameState.phase != .gameOver
+            && gameState.phase != .paused else { return }
         saveGame()
     }
 
@@ -173,8 +174,8 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
         }
         saveStore.save(SavedGame(
             levelIndex: levelIndex,
-            score: stateMachine.score,
-            lives: stateMachine.lives,
+            score: gameState.score,
+            lives: gameState.lives,
             brickGrid: grid
         ))
     }
@@ -182,23 +183,23 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
     private func handleBallLoss() {
         powerUp.clearAll(ball: ball)
         gameCamera.shake()
-        stateMachine.ballLost()
-        gameCamera.updateHUD(lives: stateMachine.lives, score: stateMachine.score)
+        gameState = gameState.ballLost()
+        gameCamera.updateHUD(lives: gameState.lives, score: gameState.score)
 
-        if stateMachine.state == .gameOver {
+        if gameState.phase == .gameOver {
             saveStore.clear()
-            present(GameSummaryScene(size: size, outcome: .gameOver, score: stateMachine.score))
+            present(GameSummaryScene(size: size, outcome: .gameOver, score: gameState.score))
         }
     }
 
     private func advanceLevel() {
         let nextIndex = levelIndex + 1
         if nextIndex < Level.all.count {
-            stateMachine.resetForNextLevel()
-            present(GameScene(size: size, levelIndex: nextIndex, stateMachine: stateMachine))
+            gameState = gameState.resetForNextLevel()
+            present(GameScene(size: size, levelIndex: nextIndex, gameState: gameState))
         } else {
             saveStore.clear()
-            present(GameSummaryScene(size: size, outcome: .victory, score: stateMachine.score))
+            present(GameSummaryScene(size: size, outcome: .victory, score: gameState.score))
         }
     }
 
@@ -217,8 +218,8 @@ private extension GameScene {
     func handleBrickContact(_ brick: BrickNode, contactPoint: CGPoint) {
         let brickColor = brick.color // capture before destroy animation alters colorBlendFactor
         bricks.removeAll { $0 === brick }
-        stateMachine.addScore(Theme.Layout.brickPoints)
-        gameCamera.updateHUD(lives: stateMachine.lives, score: stateMachine.score)
+        gameState = gameState.addScore(Theme.Layout.brickPoints)
+        gameCamera.updateHUD(lives: gameState.lives, score: gameState.score)
         spawnScorePopup(at: contactPoint, points: Theme.Layout.brickPoints)
         spawnSparks(at: contactPoint, color: brickColor)
         brick.destroy { [weak self] in
