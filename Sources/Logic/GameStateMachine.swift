@@ -1,41 +1,36 @@
-class GameStateMachine {
-    private(set) var state: GamePhase = .waitingToLaunch
-    private(set) var lives: Int
-    private(set) var score: Int
+final class GameStateMachine {
+    private(set) var gameState: GameState
+
+    // Backwards-compatible surface so GameScene requires no changes yet
+    var state: GamePhase { gameState.phase }
+    var lives: Int { gameState.lives }
+    var score: Int { gameState.score }
 
     init(lives: Int = 3, score: Int = 0) {
-        self.lives = lives
-        self.score = score
+        gameState = GameState(lives: lives, score: score)
     }
 
     func addScore(_ points: Int) {
-        guard state == .playing else { return }
-        score += points
+        gameState = gameState.addScore(points)
     }
 
     func launch() {
-        guard state == .waitingToLaunch else { return }
-        state = .playing
+        gameState = gameState.launch()
     }
 
     func ballLost() {
-        guard state == .playing else { return }
-        lives -= 1
-        state = lives > 0 ? .waitingToLaunch : .gameOver
+        gameState = gameState.ballLost()
     }
 
     func pause() {
-        guard state == .playing else { return }
-        state = .paused
+        gameState = gameState.pause()
     }
 
     func resume() {
-        guard state == .paused else { return }
-        state = .playing
+        gameState = gameState.resume()
     }
 
     func resetForNextLevel() {
-        guard state == .playing else { return }
-        state = .waitingToLaunch
+        gameState = gameState.resetForNextLevel()
     }
 }
