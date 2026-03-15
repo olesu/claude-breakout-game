@@ -36,8 +36,8 @@ final class PowerUpCoordinator {
               let scene else { return }
         let node = PowerUpNode()
         node.position = position
-        node.physicsBody?.velocity = CGVector(dx: 0, dy: -Theme.Layout.powerUpFallSpeed)
         scene.addChild(node)
+        node.physicsBody?.velocity = CGVector(dx: 0, dy: -Theme.Layout.powerUpFallSpeed)
         nodes.append(node)
     }
 

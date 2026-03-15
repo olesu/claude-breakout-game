@@ -61,7 +61,9 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
             .fadeIn(withDuration: 0.35),
             .move(to: finalPosition, duration: 0.35)
         ])
-        title.run(.sequence([entry, .wait(forDuration: 1.5), .fadeOut(withDuration: 0.5)]))
+        title.run(.sequence([
+            entry, .wait(forDuration: 1.5), .fadeOut(withDuration: 0.5), .removeFromParent()
+        ]))
         addChild(title)
 
         hud = HUDNode(sceneSize: size, topSafeArea: view?.safeAreaInsets.top ?? 0)

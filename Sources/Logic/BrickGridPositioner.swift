@@ -23,6 +23,7 @@ func makeBrickNodes(
     sceneFrame: CGRect,
     savedGrid: [[Bool]]?
 ) -> [BrickNode] {
+    precondition(!level.grid.isEmpty, "Level grid must not be empty")
     let columns = level.grid[0].count
     let spacing = Theme.Layout.brickSpacing
     let margin = Theme.Layout.brickSideMargin
