@@ -5,8 +5,6 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
     private let level: Level
     private let stateMachine: GameStateMachine
     private var gameCamera: GameCameraNode!
-    private var hud: HUDNode!
-    private var pauseOverlay: PauseOverlayNode!
     private var paddle: PaddleNode!
     private var ball: BallNode!
     private var bricks: [BrickNode] = []
@@ -36,43 +34,18 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
     // MARK: - Setup
 
     override func didMove(to view: SKView) {
-        setupCamera()
+        let cam = GameCameraNode(
+            sceneSize: size, levelName: level.name, topSafeArea: view.safeAreaInsets.top
+        )
+        addChild(cam)
+        camera = cam
+        gameCamera = cam
+        gameCamera.updateHUD(lives: stateMachine.lives, score: stateMachine.score)
         backgroundColor = .black
         physicsWorld.gravity = .zero
         physicsWorld.contactDelegate = self
         makeWallNodes(for: frame).forEach { addChild($0) }
-        setupUI()
         setupNodes()
-    }
-
-    private func setupCamera() {
-        let cam = GameCameraNode(position: CGPoint(x: frame.midX, y: frame.midY))
-        addChild(cam)
-        camera = cam
-        gameCamera = cam
-    }
-
-    private func setupUI() {
-        let title = SKLabelNode.makeTitle(level.name)
-        let finalPosition = CGPoint(x: frame.midX, y: frame.midY + Theme.Layout.titleOffsetY)
-        title.position = CGPoint(x: finalPosition.x, y: finalPosition.y - 60)
-        title.alpha = 0
-        let entry = SKAction.group([
-            .fadeIn(withDuration: 0.35),
-            .move(to: finalPosition, duration: 0.35)
-        ])
-        title.run(.sequence([
-            entry, .wait(forDuration: 1.5), .fadeOut(withDuration: 0.5), .removeFromParent()
-        ]))
-        addChild(title)
-
-        hud = HUDNode(sceneSize: size, topSafeArea: view?.safeAreaInsets.top ?? 0)
-        hud.update(lives: stateMachine.lives, score: stateMachine.score)
-        gameCamera.addChild(hud)
-
-        pauseOverlay = PauseOverlayNode(sceneSize: size)
-        pauseOverlay.isHidden = true
-        gameCamera.addChild(pauseOverlay)
     }
 
     private func setupNodes() {
@@ -174,7 +147,7 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
     private func applyPauseState() {
         let isPaused = stateMachine.state == .paused
         physicsWorld.speed = isPaused ? 0 : 1
-        pauseOverlay.isHidden = !isPaused
+        gameCamera.setPaused(isPaused)
         if isPaused {
             saveGame()
         } else {
@@ -210,7 +183,7 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
         powerUp.clearAll(ball: ball)
         gameCamera.shake()
         stateMachine.ballLost()
-        hud.update(lives: stateMachine.lives, score: stateMachine.score)
+        gameCamera.updateHUD(lives: stateMachine.lives, score: stateMachine.score)
 
         if stateMachine.state == .gameOver {
             saveStore.clear()
@@ -245,7 +218,7 @@ private extension GameScene {
         let brickColor = brick.color // capture before destroy animation alters colorBlendFactor
         bricks.removeAll { $0 === brick }
         stateMachine.addScore(Theme.Layout.brickPoints)
-        hud.update(lives: stateMachine.lives, score: stateMachine.score)
+        gameCamera.updateHUD(lives: stateMachine.lives, score: stateMachine.score)
         spawnScorePopup(at: contactPoint, points: Theme.Layout.brickPoints)
         spawnSparks(at: contactPoint, color: brickColor)
         brick.destroy { [weak self] in
