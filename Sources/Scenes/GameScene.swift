@@ -4,22 +4,16 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
     private let levelIndex: Int
     private let level: Level
     private let stateMachine: GameStateMachine
-    // set in didMove(to:): gameCamera via setupCamera(), others via setupUI()/setupNodes()
-    private var gameCamera: SKCameraNode!
+    private var gameCamera: GameCameraNode!
     private var hud: HUDNode!
     private var pauseOverlay: PauseOverlayNode!
     private var paddle: PaddleNode!
     private var ball: BallNode!
     private var bricks: [BrickNode] = []
-
+    private var powerUp: PowerUpCoordinator!
     private var levelComplete = false
     private let saveStore = GameSaveStore()
-
-    private var powerBallActive = false
-    private var powerBallTimeRemaining: TimeInterval = 0
     private var lastUpdateTime: TimeInterval = 0
-    private var powerUpNodes: [PowerUpNode] = []
-
     private let savedBrickGrid: [[Bool]]?
 
     init(
@@ -46,16 +40,15 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
         backgroundColor = .black
         physicsWorld.gravity = .zero
         physicsWorld.contactDelegate = self
-        setupWalls()
+        makeWallNodes(for: frame).forEach { addChild($0) }
         setupUI()
         setupNodes()
     }
 
     private func setupCamera() {
-        let cam = SKCameraNode()
-        cam.position = CGPoint(x: frame.midX, y: frame.midY)
+        let cam = GameCameraNode(position: CGPoint(x: frame.midX, y: frame.midY))
         addChild(cam)
-        self.camera = cam
+        camera = cam
         gameCamera = cam
     }
 
@@ -89,63 +82,10 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
         ball.position = restingBallPosition()
         addChild(ball)
 
-        setupBricks(level: level)
-    }
+        bricks = makeBrickNodes(for: level, sceneFrame: frame, savedGrid: savedBrickGrid)
+        bricks.forEach { addChild($0) }
 
-    private func setupWalls() {
-        func wallNode(from: CGPoint, to: CGPoint) -> SKNode {
-            let node = SKNode()
-            let body = SKPhysicsBody(edgeFrom: from, to: to)
-            body.restitution = 1
-            body.friction = 0
-            body.categoryBitMask = PhysicsCategory.wall
-            node.physicsBody = body
-            return node
-        }
-
-        addChild(wallNode(
-            from: CGPoint(x: frame.minX, y: frame.maxY),
-            to: CGPoint(x: frame.maxX, y: frame.maxY)
-        ))
-        addChild(wallNode(
-            from: CGPoint(x: frame.minX, y: frame.minY),
-            to: CGPoint(x: frame.minX, y: frame.maxY)
-        ))
-        addChild(wallNode(
-            from: CGPoint(x: frame.maxX, y: frame.minY),
-            to: CGPoint(x: frame.maxX, y: frame.maxY)
-        ))
-    }
-
-    private func setupBricks(level: Level) {
-        let columns = level.grid[0].count
-        let spacing = Theme.Layout.brickSpacing
-        let margin = Theme.Layout.brickSideMargin
-        let size = brickSize(
-            sceneWidth: frame.width, columns: columns, spacing: spacing, margin: margin
-        )
-        let gridOrigin = brickGridOrigin(
-            sceneMinX: frame.minX, sceneMaxY: frame.maxY, margin: margin
-        )
-
-        let validSavedGrid = savedBrickGrid.flatMap { saved -> [[Bool]]? in
-            guard saved.count == level.grid.count,
-                  saved.first?.count == level.grid.first?.count else { return nil }
-            return saved
-        }
-        let grid = validSavedGrid ?? level.grid
-        for (rowIndex, row) in grid.enumerated() {
-            for (colIndex, present) in row.enumerated() {
-                guard present else { continue }
-                let brick = BrickNode(size: size, row: rowIndex, col: colIndex)
-                brick.position = brickPosition(
-                    column: colIndex, row: rowIndex,
-                    size: size, spacing: spacing, gridOrigin: gridOrigin
-                )
-                addChild(brick)
-                bricks.append(brick)
-            }
-        }
+        powerUp = PowerUpCoordinator(scene: self)
     }
 
     // MARK: - Game loop
@@ -160,25 +100,11 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
         if stateMachine.state == .waitingToLaunch {
             ball.physicsBody?.velocity = .zero
             ball.position = restingBallPosition()
-        } else if stateMachine.state == .playing {
-            if ball.position.y < frame.minY {
-                handleBallLoss()
-            }
-            if powerBallActive {
-                powerBallTimeRemaining -= delta
-                if powerBallTimeRemaining <= 0 {
-                    deactivatePowerBall()
-                }
-            }
+        } else if stateMachine.state == .playing && ball.position.y < frame.minY {
+            handleBallLoss()
         }
 
-        powerUpNodes = powerUpNodes.filter { node in
-            if node.position.y < frame.minY - 20 {
-                node.removeFromParent()
-                return false
-            }
-            return true
-        }
+        powerUp.update(delta: delta, ball: ball)
 
         if levelComplete {
             advanceLevel()
@@ -231,9 +157,10 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
         if let brick = (contact.bodyA.node as? BrickNode) ?? (contact.bodyB.node as? BrickNode),
            brick.physicsBody != nil {
             handleBrickContact(brick, contactPoint: contact.contactPoint)
-        } else if let powerUp = (contact.bodyA.node as? PowerUpNode)
+        } else if let node = (contact.bodyA.node as? PowerUpNode)
             ?? (contact.bodyB.node as? PowerUpNode) {
-            handlePowerUpContact(powerUp)
+            powerUp.collect(node, ball: ball)
+            spawnPowerBallActivationEffect()
         } else if contact.bodyA.categoryBitMask == PhysicsCategory.paddle
             || contact.bodyB.categoryBitMask == PhysicsCategory.paddle {
             paddle.squash()
@@ -278,11 +205,8 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
     }
 
     private func handleBallLoss() {
-        if powerBallActive { deactivatePowerBall() }
-        powerUpNodes.forEach { $0.removeFromParent() }
-        powerUpNodes.removeAll()
-
-        shakeCamera()
+        powerUp.clearAll(ball: ball)
+        gameCamera.shake()
         stateMachine.ballLost()
         hud.update(lives: stateMachine.lives, score: stateMachine.score)
 
@@ -312,7 +236,7 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
     }
 }
 
-// MARK: - Contact handlers & power-ups
+// MARK: - Contact handlers
 
 private extension GameScene {
     func handleBrickContact(_ brick: BrickNode, contactPoint: CGPoint) {
@@ -328,58 +252,13 @@ private extension GameScene {
                 levelComplete = true
             }
         }
-        if !powerBallActive && Double.random(in: 0..<1) < Theme.Layout.powerUpDropProbability {
-            spawnPowerUp(at: brick.position)
-        }
-    }
-
-    func handlePowerUpContact(_ node: PowerUpNode) {
-        node.removeFromParent()
-        powerUpNodes.removeAll { $0 === node }
-        activatePowerBall()
-    }
-
-    func spawnPowerUp(at position: CGPoint) {
-        let node = PowerUpNode()
-        node.position = position
-        node.physicsBody?.velocity = CGVector(dx: 0, dy: -Theme.Layout.powerUpFallSpeed)
-        addChild(node)
-        powerUpNodes.append(node)
-    }
-
-    func activatePowerBall() {
-        powerBallActive = true
-        powerBallTimeRemaining = Theme.Layout.powerUpDuration
-        ball.activatePowerBall()
-        spawnPowerBallActivationEffect()
-    }
-
-    func deactivatePowerBall() {
-        powerBallActive = false
-        ball.deactivatePowerBall()
+        powerUp.spawnIfEligible(at: brick.position)
     }
 }
 
 // MARK: - Visual effects
 
 private extension GameScene {
-    func shakeCamera(duration: TimeInterval = 0.4, magnitude: CGFloat = 12) {
-        let origin = CGPoint(x: frame.midX, y: frame.midY)
-        let count = 6
-        let step = duration / Double(count)
-        var actions: [SKAction] = []
-        for i in 0..<count {
-            let sign: CGFloat = i % 2 == 0 ? 1 : -1
-            let decay = magnitude * (1 - CGFloat(i) / CGFloat(count))
-            actions.append(.move(
-                to: CGPoint(x: origin.x + sign * decay, y: origin.y + sign * decay * 0.5),
-                duration: step
-            ))
-        }
-        actions.append(.move(to: origin, duration: step))
-        gameCamera.run(.sequence(actions), withKey: "shake")
-    }
-
     func spawnScorePopup(at position: CGPoint, points: Int) {
         let label = SKLabelNode(fontNamed: Theme.Font.bold)
         label.text = "+\(points)"
@@ -398,9 +277,7 @@ private extension GameScene {
         let emitter = makeBrickSparkEmitter(color: color)
         emitter.position = position
         addChild(emitter)
-        let wait = SKAction.wait(forDuration: 0.6)
-        let remove = SKAction.removeFromParent()
-        emitter.run(.sequence([wait, remove]))
+        emitter.run(.sequence([.wait(forDuration: 0.6), .removeFromParent()]))
     }
 
     func spawnLaunchRipple(at position: CGPoint) {

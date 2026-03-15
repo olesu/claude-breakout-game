@@ -1,4 +1,4 @@
-import CoreGraphics
+import SpriteKit
 
 func brickSize(sceneWidth: CGFloat, columns: Int, spacing: CGFloat, margin: CGFloat) -> CGSize {
     let totalWidth = sceneWidth - 2 * margin
@@ -16,4 +16,41 @@ func brickPosition(
 
 func brickGridOrigin(sceneMinX: CGFloat, sceneMaxY: CGFloat, margin: CGFloat) -> CGPoint {
     CGPoint(x: sceneMinX + margin, y: sceneMaxY - Theme.Layout.brickTopMargin)
+}
+
+func makeBrickNodes(
+    for level: Level,
+    sceneFrame: CGRect,
+    savedGrid: [[Bool]]?
+) -> [BrickNode] {
+    let columns = level.grid[0].count
+    let spacing = Theme.Layout.brickSpacing
+    let margin = Theme.Layout.brickSideMargin
+    let size = brickSize(
+        sceneWidth: sceneFrame.width, columns: columns, spacing: spacing, margin: margin
+    )
+    let gridOrigin = brickGridOrigin(
+        sceneMinX: sceneFrame.minX, sceneMaxY: sceneFrame.maxY, margin: margin
+    )
+
+    let validSavedGrid = savedGrid.flatMap { saved -> [[Bool]]? in
+        guard saved.count == level.grid.count,
+              saved.first?.count == level.grid.first?.count else { return nil }
+        return saved
+    }
+    let grid = validSavedGrid ?? level.grid
+
+    var nodes: [BrickNode] = []
+    for (rowIndex, row) in grid.enumerated() {
+        for (colIndex, present) in row.enumerated() {
+            guard present else { continue }
+            let brick = BrickNode(size: size, row: rowIndex, col: colIndex)
+            brick.position = brickPosition(
+                column: colIndex, row: rowIndex,
+                size: size, spacing: spacing, gridOrigin: gridOrigin
+            )
+            nodes.append(brick)
+        }
+    }
+    return nodes
 }
