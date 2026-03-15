@@ -188,12 +188,17 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
     }
 
     private func handleBallLoss() {
+        // State mutations
         powerUp.clearAll(ball: ball)
-        gameCamera.shake()
         gameState = gameState.ballLost()
+        let isGameOver = gameState.phase == .gameOver
+
+        // Visual side-effects
+        gameCamera.shake()
         gameCamera.updateHUD(lives: gameState.lives, score: gameState.score)
 
-        if gameState.phase == .gameOver {
+        // Scene transition (happens last)
+        if isGameOver {
             saveStore.clear()
             present(GameSummaryScene(size: size, outcome: .gameOver, score: gameState.score))
         }
@@ -228,19 +233,24 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
 
 private extension GameScene {
     func handleBrickContact(_ brick: BrickNode, contactPoint: CGPoint) {
-        let brickColor = brick.color // capture before destroy animation alters colorBlendFactor
+        // Capture all inputs before any mutation
+        let points = Theme.Layout.brickPoints
+        let color = brick.color
+        let spawnPowerUp = !powerUp.isPowerBallActive
+
+        // State mutations
         bricks.removeAll { $0 === brick }
-        gameState = gameState.addScore(Theme.Layout.brickPoints)
+        gameState = gameState.addScore(points)
         gameCamera.updateHUD(lives: gameState.lives, score: gameState.score)
-        spawnScorePopup(at: contactPoint, points: Theme.Layout.brickPoints)
-        spawnSparks(at: contactPoint, color: brickColor)
+
+        // Visual side-effects
+        spawnScorePopup(at: contactPoint, points: points)
+        spawnSparks(at: contactPoint, color: color)
         brick.destroy { [weak self] in
             guard let self else { return }
-            if bricks.isEmpty && !levelComplete {
-                levelComplete = true
-            }
+            if bricks.isEmpty && !levelComplete { levelComplete = true }
         }
-        powerUp.spawnIfEligible(at: brick.position)
+        if spawnPowerUp { powerUp.spawnIfEligible(at: brick.position) }
     }
 }
 
