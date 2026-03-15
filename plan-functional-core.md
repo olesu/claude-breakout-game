@@ -9,11 +9,11 @@ code becomes a thin shell that reads pure state and applies mutations.
 ## Architecture at Completion
 
 ```text
-GameState (struct, value type)
+GameState (struct, immutable value type)
   ├── phase: GamePhase          ← renamed from GameState enum
   ├── lives: Int
   └── score: Int
-  └── mutating transition methods (pure logic, fully tested)
+  └── transition methods return a new GameState (pure, fully tested)
 
 GameScene (SpriteKit shell)
   ├── var gameState: GameState  ← owns the value directly
@@ -110,16 +110,21 @@ All tests use `import Testing`. No `GameStateMachine` — only `GameState`.
 
 #### Value semantics
 
-- `copy_mutatingOriginal_doesNotAffectCopy` — mutate a var, verify a `let` copy
-  is unchanged. Proves value semantics; would fail if this were a class.
+- `copy_originalUnchangedAfterTransition` — call a transition on a `let` copy,
+  verify the original is unchanged. Proves pure transformation; would fail if
+  this were a class.
 
 ### 2b — Implement `Sources/Logic/GameState.swift`
 
+Properties are `let` — the struct is immutable. Each transition returns a new
+`GameState` rather than mutating in place. The call site assignment makes the
+state change explicit and visible.
+
 ```swift
 struct GameState {
-    var phase: GamePhase
-    var lives: Int
-    var score: Int
+    let phase: GamePhase
+    let lives: Int
+    let score: Int
 
     init(lives: Int = 3, score: Int = 0) {
         self.phase = .waitingToLaunch
@@ -127,16 +132,21 @@ struct GameState {
         self.score = score
     }
 
-    mutating func addScore(_ points: Int) { ... }
-    mutating func launch() { ... }
-    mutating func ballLost() { ... }
-    mutating func pause() { ... }
-    mutating func resume() { ... }
-    mutating func resetForNextLevel() { ... }
+    // points must be positive; negative or zero values are silently ignored.
+    func addScore(_ points: Int) -> GameState { ... }
+    func launch() -> GameState { ... }
+    func ballLost() -> GameState { ... }
+    func pause() -> GameState { ... }
+    func resume() -> GameState { ... }
+    func resetForNextLevel() -> GameState { ... }
 }
 ```
 
 All logic is identical to `GameStateMachine` — it is moved, not rewritten.
+
+> **Note:** The initial implementation used `mutating func`. This step converts
+> it to the immutable returning API described above. Tests require only minor
+> updates: `state.launch()` becomes `state = state.launch()` etc.
 
 ### Verify — Step 2
 
@@ -165,12 +175,12 @@ class GameStateMachine {
         gameState = GameState(lives: lives, score: score)
     }
 
-    func addScore(_ points: Int) { gameState.addScore(points) }
-    func launch()                { gameState.launch() }
-    func ballLost()              { gameState.ballLost() }
-    func pause()                 { gameState.pause() }
-    func resume()                { gameState.resume() }
-    func resetForNextLevel()     { gameState.resetForNextLevel() }
+    func addScore(_ points: Int) { gameState = gameState.addScore(points) }
+    func launch()                { gameState = gameState.launch() }
+    func ballLost()              { gameState = gameState.ballLost() }
+    func pause()                 { gameState = gameState.pause() }
+    func resume()                { gameState = gameState.resume() }
+    func resetForNextLevel()     { gameState = gameState.resetForNextLevel() }
 }
 ```
 
@@ -202,12 +212,14 @@ by 20 (new `GameStateTests`) — net −1.
 | `stateMachine.state` | `gameState.phase` |
 | `stateMachine.lives` | `gameState.lives` |
 | `stateMachine.score` | `gameState.score` |
-| `stateMachine.addScore(x)` | `gameState.addScore(x)` |
-| `stateMachine.launch()` | `gameState.launch()` |
-| `stateMachine.ballLost()` | `gameState.ballLost()` |
-| `stateMachine.pause()` | `gameState.pause()` |
-| `stateMachine.resume()` | `gameState.resume()` |
-| `stateMachine.resetForNextLevel()` | `gameState.resetForNextLevel()` |
+| `stateMachine.addScore(x)` | `gameState = gameState.addScore(x)` |
+| `stateMachine.launch()` | `gameState = gameState.launch()` |
+| `stateMachine.ballLost()` | `gameState = gameState.ballLost()` |
+| `stateMachine.pause()` | `gameState = gameState.pause()` |
+| `stateMachine.resume()` | `gameState = gameState.resume()` |
+<!-- markdownlint-disable MD013 -->
+| `stateMachine.resetForNextLevel()` | `gameState = gameState.resetForNextLevel()` |
+<!-- markdownlint-enable MD013 -->
 
 ### Changes to `Sources/Scenes/SplashScene.swift`
 
@@ -378,17 +390,17 @@ override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
     case .none:
         break
     case .pause:
-        gameState.pause()
+        gameState = gameState.pause()
         applyPauseState()
     case .resume:
-        gameState.resume()
+        gameState = gameState.resume()
         applyPauseState()
     case .movePaddle:
         movePaddle(to: touches)
     case .launchAndMovePaddle:
         movePaddle(to: touches)
         spawnLaunchRipple(at: ball.position)
-        gameState.launch()
+        gameState = gameState.launch()
         ball.physicsBody?.velocity = Theme.Layout.ballLaunchVelocity
     }
 }
@@ -421,7 +433,7 @@ private func handleBrickContact(_ brick: BrickNode, at point: CGPoint) {
 
     // State mutations
     bricks.removeAll { $0 === brick }
-    gameState.addScore(points)
+    gameState = gameState.addScore(points)
     gameCamera.updateHUD(lives: gameState.lives, score: gameState.score)
 
     // Visual side-effects
@@ -444,7 +456,7 @@ private func handleBallLoss() {
 
     // State mutations
     powerUp.clearAll(ball: ball)
-    gameState.ballLost()
+    gameState = gameState.ballLost()
     let isGameOver = gameState.phase == .gameOver
 
     // Visual side-effects

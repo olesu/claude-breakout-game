@@ -3,9 +3,10 @@ import Testing
 
 struct GameStateTests {
 
+    // MARK: - Init
+
     @Test func init_defaults_phaseIsWaitingToLaunch() {
-        let state = GameState()
-        #expect(state.phase == .waitingToLaunch)
+        #expect(GameState().phase == .waitingToLaunch)
     }
 
     @Test func init_livesAndScore_arePreserved() {
@@ -14,187 +15,149 @@ struct GameStateTests {
         #expect(state.score == 100)
     }
 
+    // MARK: - addScore
+
     @Test func addScore_whilePlaying_incrementsScore() {
-        var state = GameState()
-        state.launch()
-        state.addScore(10)
+        let state = GameState().launch().addScore(10)
         #expect(state.score == 10)
     }
 
-    @Test func addScore_whileWaitingToLaunch_isIgnored() {
-        var state = GameState()
-        state.addScore(10)
-        #expect(state.score == 0)
-    }
-
-    @Test func addScore_negative_isIgnored() {
-        var state = GameState()
-        state.launch()
-        state.addScore(-5)
-        #expect(state.score == 0)
-    }
-
     @Test func addScore_accumulates_incrementsTotal() {
-        var state = GameState()
-        state.launch()
-        state.addScore(10)
-        state.addScore(10)
+        let state = GameState().launch().addScore(10).addScore(10)
         #expect(state.score == 20)
     }
 
+    @Test func addScore_whileWaitingToLaunch_isIgnored() {
+        #expect(GameState().addScore(10).score == 0)
+    }
+
     @Test func addScore_whilePaused_isIgnored() {
-        var state = GameState()
-        state.launch()
-        state.pause()
-        state.addScore(10)
+        let state = GameState().launch().pause().addScore(10)
         #expect(state.score == 0)
     }
 
     @Test func addScore_whileGameOver_isIgnored() {
-        var state = GameState(lives: 1)
-        state.launch()
-        state.ballLost()
-        state.addScore(10)
+        let state = GameState(lives: 1).launch().ballLost().addScore(10)
         #expect(state.score == 0)
+    }
+
+    @Test func addScore_zero_isIgnored() {
+        #expect(GameState().launch().addScore(0).score == 0)
+    }
+
+    @Test func addScore_negative_isIgnored() {
+        #expect(GameState().launch().addScore(-5).score == 0)
     }
 
     // MARK: - launch
 
     @Test func launch_fromWaitingToLaunch_movesToPlaying() {
-        var state = GameState()
-        state.launch()
-        #expect(state.phase == .playing)
+        #expect(GameState().launch().phase == .playing)
     }
 
     @Test func launch_whilePlaying_isIgnored() {
-        var state = GameState()
-        state.launch()
-        state.launch()
+        let state = GameState().launch().launch()
         #expect(state.phase == .playing)
     }
 
     @Test func launch_whilePaused_isIgnored() {
-        var state = GameState()
-        state.launch()
-        state.pause()
-        state.launch()
+        let state = GameState().launch().pause().launch()
         #expect(state.phase == .paused)
     }
 
     @Test func launch_whileGameOver_isIgnored() {
-        var state = GameState(lives: 1)
-        state.launch()
-        state.ballLost()
-        state.launch()
+        let state = GameState(lives: 1).launch().ballLost().launch()
         #expect(state.phase == .gameOver)
     }
 
     // MARK: - ballLost
 
     @Test func ballLost_withLivesRemaining_decrementsLives() {
-        var state = GameState(lives: 3)
-        state.launch()
-        state.ballLost()
+        let state = GameState(lives: 3).launch().ballLost()
         #expect(state.lives == 2)
     }
 
     @Test func ballLost_withLivesRemaining_phaseBecomesWaitingToLaunch() {
-        var state = GameState(lives: 3)
-        state.launch()
-        state.ballLost()
+        let state = GameState(lives: 3).launch().ballLost()
         #expect(state.phase == .waitingToLaunch)
     }
 
     @Test func ballLost_lastLife_phaseBecomesGameOver() {
-        var state = GameState(lives: 1)
-        state.launch()
-        state.ballLost()
+        let state = GameState(lives: 1).launch().ballLost()
         #expect(state.phase == .gameOver)
     }
 
     @Test func ballLost_lastLife_livesAreZero() {
-        var state = GameState(lives: 1)
-        state.launch()
-        state.ballLost()
+        let state = GameState(lives: 1).launch().ballLost()
         #expect(state.lives == 0)
     }
 
     @Test func ballLost_whileNotPlaying_isIgnored() {
-        var state = GameState(lives: 3)
-        state.ballLost()
+        let state = GameState(lives: 3).ballLost()
         #expect(state.lives == 3)
         #expect(state.phase == .waitingToLaunch)
     }
 
     @Test func ballLost_whileGameOver_isIgnored() {
-        var state = GameState(lives: 1)
-        state.launch()
-        state.ballLost()
-        let livesAfterGameOver = state.lives
-        state.ballLost()
-        #expect(state.lives == livesAfterGameOver)
-        #expect(state.phase == .gameOver)
+        let gameOver = GameState(lives: 1).launch().ballLost()
+        let after = gameOver.ballLost()
+        #expect(after.lives == 0)
+        #expect(after.phase == .gameOver)
     }
 
     // MARK: - pause / resume
 
     @Test func pause_whilePlaying_movesToPaused() {
-        var state = GameState()
-        state.launch()
-        state.pause()
+        let state = GameState().launch().pause()
         #expect(state.phase == .paused)
     }
 
     @Test func pause_whileNotPlaying_isIgnored() {
-        var state = GameState()
-        state.pause()
-        #expect(state.phase == .waitingToLaunch)
+        #expect(GameState().pause().phase == .waitingToLaunch)
     }
 
     @Test func resume_whilePaused_movesToPlaying() {
-        var state = GameState()
-        state.launch()
-        state.pause()
-        state.resume()
+        let state = GameState().launch().pause().resume()
         #expect(state.phase == .playing)
     }
 
     @Test func resume_whileNotPaused_isIgnored() {
-        var state = GameState()
-        state.resume()
-        #expect(state.phase == .waitingToLaunch)
+        #expect(GameState().resume().phase == .waitingToLaunch)
     }
 
     // MARK: - resetForNextLevel
 
     @Test func resetForNextLevel_whilePlaying_movesToWaitingToLaunch() {
-        var state = GameState()
-        state.launch()
-        state.resetForNextLevel()
+        let state = GameState().launch().resetForNextLevel()
         #expect(state.phase == .waitingToLaunch)
     }
 
-    @Test func resetForNextLevel_whileNotPlaying_isIgnored() {
-        var state = GameState()
-        state.resetForNextLevel()
-        #expect(state.phase == .waitingToLaunch)
+    @Test func resetForNextLevel_whileWaitingToLaunch_isIgnored() {
+        #expect(GameState().resetForNextLevel().phase == .waitingToLaunch)
+    }
+
+    @Test func resetForNextLevel_whilePaused_isIgnored() {
+        let state = GameState().launch().pause().resetForNextLevel()
+        #expect(state.phase == .paused)
+    }
+
+    @Test func resetForNextLevel_whileGameOver_isIgnored() {
+        let state = GameState(lives: 1).launch().ballLost().resetForNextLevel()
+        #expect(state.phase == .gameOver)
     }
 
     @Test func resetForNextLevel_preservesLivesAndScore() {
-        var state = GameState(lives: 2)
-        state.launch()
-        state.addScore(50)
-        state.resetForNextLevel()
+        let state = GameState(lives: 2).launch().addScore(50).resetForNextLevel()
         #expect(state.lives == 2)
         #expect(state.score == 50)
     }
 
     // MARK: - Value semantics
 
-    @Test func copy_mutatingOriginal_doesNotAffectCopy() {
-        var original = GameState()
-        let copy = original
-        original.launch()
-        #expect(copy.phase == .waitingToLaunch)
+    @Test func copy_originalUnchangedAfterTransition() {
+        let original = GameState()
+        let launched = original.launch()
+        #expect(original.phase == .waitingToLaunch)
+        #expect(launched.phase == .playing)
     }
 }

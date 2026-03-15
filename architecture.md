@@ -26,8 +26,8 @@ The pattern that guides this separation is **Functional Core / Imperative
 Shell**:
 
 - **Functional core** — pure Swift types and functions that model game state
-  and decisions. No SpriteKit imports. Takes inputs, returns new values.
-  Fully unit-tested.
+  and decisions. No SpriteKit imports. State transitions return new values
+  rather than mutating in place. Fully unit-tested.
 - **Imperative shell** — SpriteKit scenes and nodes that own the mutable
   world. Calls into the core to decide *what* should happen, then applies
   those decisions as mutations (moving nodes, running actions, transitioning

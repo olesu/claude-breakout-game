@@ -1,7 +1,7 @@
 struct GameState {
-    var phase: GamePhase
-    var lives: Int
-    var score: Int
+    let phase: GamePhase
+    let lives: Int
+    let score: Int
 
     init(lives: Int = 3, score: Int = 0) {
         self.phase = .waitingToLaunch
@@ -9,35 +9,43 @@ struct GameState {
         self.score = score
     }
 
+    // Internal transitions only — callers must use the public transition methods.
+    private init(phase: GamePhase, lives: Int, score: Int) {
+        self.phase = phase
+        self.lives = lives
+        self.score = score
+    }
+
     // points must be positive; negative or zero values are silently ignored.
-    mutating func addScore(_ points: Int) {
-        guard phase == .playing, points > 0 else { return }
-        score += points
+    func addScore(_ points: Int) -> GameState {
+        guard phase == .playing, points > 0 else { return self }
+        return GameState(phase: phase, lives: lives, score: score + points)
     }
 
-    mutating func launch() {
-        guard phase == .waitingToLaunch else { return }
-        phase = .playing
+    func launch() -> GameState {
+        guard phase == .waitingToLaunch else { return self }
+        return GameState(phase: .playing, lives: lives, score: score)
     }
 
-    mutating func ballLost() {
-        guard phase == .playing else { return }
-        lives -= 1
-        phase = lives > 0 ? .waitingToLaunch : .gameOver
+    func ballLost() -> GameState {
+        guard phase == .playing else { return self }
+        let newLives = lives - 1
+        let newPhase: GamePhase = newLives > 0 ? .waitingToLaunch : .gameOver
+        return GameState(phase: newPhase, lives: newLives, score: score)
     }
 
-    mutating func pause() {
-        guard phase == .playing else { return }
-        phase = .paused
+    func pause() -> GameState {
+        guard phase == .playing else { return self }
+        return GameState(phase: .paused, lives: lives, score: score)
     }
 
-    mutating func resume() {
-        guard phase == .paused else { return }
-        phase = .playing
+    func resume() -> GameState {
+        guard phase == .paused else { return self }
+        return GameState(phase: .playing, lives: lives, score: score)
     }
 
-    mutating func resetForNextLevel() {
-        guard phase == .playing else { return }
-        phase = .waitingToLaunch
+    func resetForNextLevel() -> GameState {
+        guard phase == .playing else { return self }
+        return GameState(phase: .waitingToLaunch, lives: lives, score: score)
     }
 }
