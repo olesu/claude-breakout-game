@@ -66,48 +66,55 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
     // MARK: - Game loop
 
     override func update(_ currentTime: TimeInterval) {
-        // physicsWorld.speed handles physics; guard prevents state logic from running while paused.
-        guard gameState.phase != .paused else { return }
-
         let delta = lastUpdateTime == 0 ? 0 : currentTime - lastUpdateTime
         lastUpdateTime = currentTime
 
-        if gameState.phase == .waitingToLaunch {
-            ball.physicsBody?.velocity = .zero
-            ball.position = restingBallPosition()
-        } else if gameState.phase == .playing && ball.position.y < frame.minY {
-            handleBallLoss()
+        // Pure calculation
+        let action = frameAction(
+            phase: gameState.phase,
+            ballY: ball.position.y,
+            floorY: frame.minY,
+            levelComplete: levelComplete
+        )
+
+        // Apply
+        switch action {
+        case .nothing:        break
+        case .resetBall:      resetBall()
+        case .handleBallLoss: handleBallLoss()
+        case .advanceLevel:   advanceLevel()
         }
 
         powerUp.update(delta: delta, ball: ball)
-
-        if levelComplete {
-            advanceLevel()
-        }
     }
 
     // MARK: - Touch handling
 
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
         guard let touch = touches.first else { return }
-        // Only the pause button toggles pause; taps elsewhere are suppressed while paused.
-        if nodes(at: touch.location(in: self)).contains(where: { $0.name == "pauseButton" }) {
-            if gameState.phase == .playing {
-                gameState = gameState.pause()
-                applyPauseState()
-                return
-            } else if gameState.phase == .paused {
-                gameState = gameState.resume()
-                applyPauseState()
-                return
-            }
-        }
-        guard gameState.phase != .paused else { return }
-        movePaddle(to: touches)
-        if gameState.phase == .waitingToLaunch {
-            spawnLaunchRipple(at: ball.position)
+
+        // Pure calculation
+        let onPauseButton = nodes(at: touch.location(in: self))
+            .contains { $0.name == "pauseButton" }
+        let intent = touchIntent(hitsPauseButton: onPauseButton, phase: gameState.phase)
+
+        // Apply
+        switch intent {
+        case .none:
+            break
+        case .pause:
+            gameState = gameState.pause()
+            applyPauseState()
+        case .resume:
+            gameState = gameState.resume()
+            applyPauseState()
+        case .movePaddle:
+            movePaddle(to: touches)
+        case .launchAndMovePaddle:
             gameState = gameState.launch()
             gameCamera.updateHUD(lives: gameState.lives, score: gameState.score)
+            movePaddle(to: touches)
+            spawnLaunchRipple(at: ball.position)
             ball.physicsBody?.velocity = Theme.Layout.ballLaunchVelocity
         }
     }
@@ -201,6 +208,11 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
             saveStore.clear()
             present(GameSummaryScene(size: size, outcome: .victory, score: gameState.score))
         }
+    }
+
+    private func resetBall() {
+        ball.physicsBody?.velocity = .zero
+        ball.position = restingBallPosition()
     }
 
     private func restingBallPosition() -> CGPoint {
