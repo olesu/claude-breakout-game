@@ -15,6 +15,11 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
     private var levelComplete = false
     private let saveStore = GameSaveStore()
 
+    private var powerBallActive = false
+    private var powerBallTimeRemaining: TimeInterval = 0
+    private var lastUpdateTime: TimeInterval = 0
+    private var powerUpNodes: [PowerUpNode] = []
+
     private let savedBrickGrid: [[Bool]]?
 
     init(
@@ -148,11 +153,31 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
     override func update(_ currentTime: TimeInterval) {
         // physicsWorld.speed handles physics; guard prevents state logic from running while paused.
         guard stateMachine.state != .paused else { return }
+
+        let delta = lastUpdateTime == 0 ? 0 : currentTime - lastUpdateTime
+        lastUpdateTime = currentTime
+
         if stateMachine.state == .waitingToLaunch {
             ball.physicsBody?.velocity = .zero
             ball.position = restingBallPosition()
-        } else if stateMachine.state == .playing && ball.position.y < frame.minY {
-            handleBallLoss()
+        } else if stateMachine.state == .playing {
+            if ball.position.y < frame.minY {
+                handleBallLoss()
+            }
+            if powerBallActive {
+                powerBallTimeRemaining -= delta
+                if powerBallTimeRemaining <= 0 {
+                    deactivatePowerBall()
+                }
+            }
+        }
+
+        powerUpNodes = powerUpNodes.filter { node in
+            if node.position.y < frame.minY - 20 {
+                node.removeFromParent()
+                return false
+            }
+            return true
         }
 
         if levelComplete {
@@ -206,24 +231,12 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
         if let brick = (contact.bodyA.node as? BrickNode) ?? (contact.bodyB.node as? BrickNode),
            brick.physicsBody != nil {
             handleBrickContact(brick, contactPoint: contact.contactPoint)
+        } else if let powerUp = (contact.bodyA.node as? PowerUpNode)
+            ?? (contact.bodyB.node as? PowerUpNode) {
+            handlePowerUpContact(powerUp)
         } else if contact.bodyA.categoryBitMask == PhysicsCategory.paddle
             || contact.bodyB.categoryBitMask == PhysicsCategory.paddle {
             paddle.squash()
-        }
-    }
-
-    private func handleBrickContact(_ brick: BrickNode, contactPoint: CGPoint) {
-        let brickColor = brick.color // capture before destroy animation alters colorBlendFactor
-        bricks.removeAll { $0 === brick }
-        stateMachine.addScore(Theme.Layout.brickPoints)
-        hud.update(lives: stateMachine.lives, score: stateMachine.score)
-        spawnScorePopup(at: contactPoint, points: Theme.Layout.brickPoints)
-        spawnSparks(at: contactPoint, color: brickColor)
-        brick.destroy { [weak self] in
-            guard let self else { return }
-            if bricks.isEmpty && !levelComplete {
-                levelComplete = true
-            }
         }
     }
 
@@ -233,7 +246,11 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
         let isPaused = stateMachine.state == .paused
         physicsWorld.speed = isPaused ? 0 : 1
         pauseOverlay.isHidden = !isPaused
-        if isPaused { saveGame() }
+        if isPaused {
+            saveGame()
+        } else {
+            lastUpdateTime = 0
+        }
     }
 
     override func willMove(from view: SKView) {
@@ -261,6 +278,10 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
     }
 
     private func handleBallLoss() {
+        if powerBallActive { deactivatePowerBall() }
+        powerUpNodes.forEach { $0.removeFromParent() }
+        powerUpNodes.removeAll()
+
         shakeCamera()
         stateMachine.ballLost()
         hud.update(lives: stateMachine.lives, score: stateMachine.score)
@@ -288,6 +309,54 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
             paddleHalfHeight: paddle.size.height / 2,
             ballRadius: Theme.Layout.ballRadius
         )
+    }
+}
+
+// MARK: - Contact handlers & power-ups
+
+private extension GameScene {
+    func handleBrickContact(_ brick: BrickNode, contactPoint: CGPoint) {
+        let brickColor = brick.color // capture before destroy animation alters colorBlendFactor
+        bricks.removeAll { $0 === brick }
+        stateMachine.addScore(Theme.Layout.brickPoints)
+        hud.update(lives: stateMachine.lives, score: stateMachine.score)
+        spawnScorePopup(at: contactPoint, points: Theme.Layout.brickPoints)
+        spawnSparks(at: contactPoint, color: brickColor)
+        brick.destroy { [weak self] in
+            guard let self else { return }
+            if bricks.isEmpty && !levelComplete {
+                levelComplete = true
+            }
+        }
+        if !powerBallActive && Double.random(in: 0..<1) < Theme.Layout.powerUpDropProbability {
+            spawnPowerUp(at: brick.position)
+        }
+    }
+
+    func handlePowerUpContact(_ node: PowerUpNode) {
+        node.removeFromParent()
+        powerUpNodes.removeAll { $0 === node }
+        activatePowerBall()
+    }
+
+    func spawnPowerUp(at position: CGPoint) {
+        let node = PowerUpNode()
+        node.position = position
+        node.physicsBody?.velocity = CGVector(dx: 0, dy: -Theme.Layout.powerUpFallSpeed)
+        addChild(node)
+        powerUpNodes.append(node)
+    }
+
+    func activatePowerBall() {
+        powerBallActive = true
+        powerBallTimeRemaining = Theme.Layout.powerUpDuration
+        ball.activatePowerBall()
+        spawnPowerBallActivationEffect()
+    }
+
+    func deactivatePowerBall() {
+        powerBallActive = false
+        ball.deactivatePowerBall()
     }
 }
 
@@ -337,6 +406,11 @@ private extension GameScene {
     func spawnLaunchRipple(at position: CGPoint) {
         spawnRippleRing(at: position, delay: 0, scale: 4.0, alpha: 1.0, lineWidth: 2.0)
         spawnRippleRing(at: position, delay: 0.12, scale: 5.0, alpha: 0.6, lineWidth: 1.5)
+    }
+
+    func spawnPowerBallActivationEffect() {
+        spawnRippleRing(at: ball.position, delay: 0, scale: 6.0, alpha: 1.0, lineWidth: 2.5)
+        spawnRippleRing(at: ball.position, delay: 0.1, scale: 8.0, alpha: 0.5, lineWidth: 1.5)
     }
 
     func spawnRippleRing(
