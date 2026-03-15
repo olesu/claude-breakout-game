@@ -1,4 +1,4 @@
-enum GameState: Equatable {
+enum GamePhase: Equatable {
     case waitingToLaunch
     case playing
     case paused
@@ -6,7 +6,7 @@ enum GameState: Equatable {
 }
 
 class GameStateMachine {
-    private(set) var state: GameState = .waitingToLaunch
+    private(set) var state: GamePhase = .waitingToLaunch
     private(set) var lives: Int
     private(set) var score: Int
 
