@@ -2,7 +2,7 @@
 
 ## Prerequisites
 
-- [ ] Refactor power-up system to support multiple types
+- [x] Refactor power-up system to support multiple types
   - Introduce a `PowerUpType` enum and refactor `PowerUpNode` and
     `PowerUpCoordinator` to be type-aware. Each type should have its own
     label, color, duration, and effect.
