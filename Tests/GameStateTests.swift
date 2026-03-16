@@ -179,6 +179,11 @@ struct GameStateTests {
         #expect(state.lives == 0)
     }
 
+    @Test func addLife_thenBallLost_netsCorrectly() {
+        let state = GameState(lives: 2).launch().addLife().ballLost()
+        #expect(state.lives == 2)
+    }
+
     // MARK: - Value semantics
 
     @Test func copy_originalUnchangedAfterTransition() {

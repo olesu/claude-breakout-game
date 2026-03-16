@@ -149,7 +149,9 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
                 gameState = gameState.addLife()
                 gameCamera.updateHUD(lives: gameState.lives, score: gameState.score)
                 spawnPowerUpActivationEffect(for: .extraLife)
-            case .instant, .none:
+            case .instant:
+                break  // New instant types need explicit handling above this line.
+            case .none:
                 break
             }
         } else if contact.bodyA.categoryBitMask == PhysicsCategory.paddle

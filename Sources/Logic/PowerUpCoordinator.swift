@@ -57,6 +57,8 @@ final class PowerUpCoordinator {
         let type = node.type
         guard type.duration != nil else { return .instant(type) }
         let newState = state.collect(type)
+        // Defensive: unreachable today (timed types always produce an active state),
+        // but guards against future changes to PowerUpState.collect semantics.
         guard newState.isActive else { return .none }
         if let previous = state.active {
             removeEffect(for: previous)
