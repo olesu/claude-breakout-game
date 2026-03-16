@@ -15,9 +15,4 @@ struct PowerUpTypeTests {
         #expect(PowerUpType.powerBall.duration == 8.0)
     }
 
-    // MARK: - color
-
-    @Test func powerBall_color_isNonNil() {
-        #expect(PowerUpType.powerBall.color != nil)
-    }
 }

@@ -1,4 +1,4 @@
-import UIKit
+import Foundation
 
 enum PowerUpType {
     case powerBall
@@ -9,15 +9,9 @@ enum PowerUpType {
         }
     }
 
-    var color: UIColor {
-        switch self {
-        case .powerBall: return Theme.Color.powerUp
-        }
-    }
-
     var duration: TimeInterval? {
         switch self {
-        case .powerBall: return 8.0
+        case .powerBall: return Theme.Layout.powerUpDuration
         }
     }
 }
