@@ -1,6 +1,9 @@
 import SpriteKit
 
 final class PaddleNode: SKSpriteNode {
+    private static let widePaddleKey = "widePaddle"
+    private static let squashKey = "squash"
+
     init(sceneWidth: CGFloat) {
         let width = sceneWidth * Theme.Layout.paddleWidthRatio
         let height = Theme.Layout.paddleHeight
@@ -31,16 +34,14 @@ final class PaddleNode: SKSpriteNode {
     }
 
     func squash() {
-        removeAction(forKey: "squash")
+        removeAction(forKey: Self.squashKey)
         run(.sequence([
             .scaleY(to: 0.45, duration: 0.06),
             .scaleY(to: 1.10, duration: 0.08),
             .scaleY(to: 1.00, duration: 0.06)
-        ]), withKey: "squash")
+        ]), withKey: Self.squashKey)
     }
 
     @available(*, unavailable)
     required init?(coder aDecoder: NSCoder) { fatalError() }
-
-    private static let widePaddleKey = "widePaddle"
 }

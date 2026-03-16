@@ -49,9 +49,10 @@ final class PowerUpCoordinator {
         node.removeFromParent()
         nodes.removeAll { $0 === node }
         let newState = state.collect(node.type)
-        // Instant effects (duration == nil) are not yet dispatched here.
+        // Instant effects (duration == nil) are silently ignored here;
+        // add dispatch before introducing a nil-duration case.
         guard newState.isActive else { return nil }
-        if state.isActive, let previous = state.active {
+        if let previous = state.active {
             removeEffect(for: previous)
         }
         state = newState
