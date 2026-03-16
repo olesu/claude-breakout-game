@@ -5,6 +5,7 @@ final class BallNode: SKNode {
     private(set) var isPowerBall: Bool = false
     private let shape: SKShapeNode
     private let bloom: SKEffectNode
+    private var speedBeforeSlowBall: CGFloat?
 
     init(radius: CGFloat) {
         let bloomNode = SKEffectNode()
@@ -55,16 +56,22 @@ final class BallNode: SKNode {
 
     func activateSlowBall() {
         guard let body = physicsBody else { return }
+        let speed = hypot(body.velocity.dx, body.velocity.dy)
+        speedBeforeSlowBall = speed
         let f = Theme.Layout.slowBallFactor
         body.velocity = CGVector(dx: body.velocity.dx * f, dy: body.velocity.dy * f)
         shape.fillColor = Theme.Color.slowBall
     }
 
     func deactivateSlowBall() {
-        guard let body = physicsBody else { return }
-        let f = 1.0 / Theme.Layout.slowBallFactor
-        body.velocity = CGVector(dx: body.velocity.dx * f, dy: body.velocity.dy * f)
-        shape.fillColor = Theme.Color.primary
+        guard let body = physicsBody, let savedSpeed = speedBeforeSlowBall else { return }
+        let currentSpeed = hypot(body.velocity.dx, body.velocity.dy)
+        if currentSpeed > 0 {
+            let scale = savedSpeed / currentSpeed
+            body.velocity = CGVector(dx: body.velocity.dx * scale, dy: body.velocity.dy * scale)
+        }
+        speedBeforeSlowBall = nil
+        shape.fillColor = isPowerBall ? Theme.Color.powerUp : Theme.Color.primary
     }
 
     func deactivatePowerBall() {
