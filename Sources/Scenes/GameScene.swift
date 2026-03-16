@@ -60,7 +60,7 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
         bricks = makeBrickNodes(for: level, sceneFrame: frame, savedGrid: savedBrickGrid)
         bricks.forEach { addChild($0) }
 
-        powerUp = PowerUpCoordinator(scene: self)
+        powerUp = PowerUpCoordinator(scene: self, ball: ball, paddle: paddle)
     }
 
     // MARK: - Game loop
@@ -85,7 +85,7 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
         case .advanceLevel:   advanceLevel()
         }
 
-        powerUp.update(delta: delta, ball: ball)
+        powerUp.update(delta: delta)
     }
 
     // MARK: - Touch handling
@@ -129,7 +129,7 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
         let x = clampedPaddleX(
             touchX: touch.location(in: self).x,
             sceneWidth: frame.width,
-            halfPaddleWidth: paddle.size.width / 2
+            halfPaddleWidth: paddle.size.width * paddle.xScale / 2
         )
         paddle.position.x = x
     }
@@ -142,7 +142,7 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
             handleBrickContact(brick, contactPoint: contact.contactPoint)
         } else if let node = (contact.bodyA.node as? PowerUpNode)
             ?? (contact.bodyB.node as? PowerUpNode) {
-            powerUp.collect(node, ball: ball)
+            powerUp.collect(node)
             spawnPowerBallActivationEffect()
         } else if contact.bodyA.categoryBitMask == PhysicsCategory.paddle
             || contact.bodyB.categoryBitMask == PhysicsCategory.paddle {
@@ -189,7 +189,7 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
 
     private func handleBallLoss() {
         // State mutations
-        powerUp.clearAll(ball: ball)
+        powerUp.clearAll()
         gameState = gameState.ballLost()
         let isGameOver = gameState.phase == .gameOver
 

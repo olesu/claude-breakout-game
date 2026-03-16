@@ -17,6 +17,16 @@ final class PaddleNode: SKSpriteNode {
         physicsBody = body
     }
 
+    func activateWidePaddle() {
+        removeAction(forKey: "widePaddle")
+        run(.scaleX(to: Theme.Layout.paddleWidthMultiplier, duration: 0.25), withKey: "widePaddle")
+    }
+
+    func deactivateWidePaddle() {
+        removeAction(forKey: "widePaddle")
+        run(.scaleX(to: 1.0, duration: 0.25), withKey: "widePaddle")
+    }
+
     func squash() {
         removeAction(forKey: "squash")
         run(.sequence([
