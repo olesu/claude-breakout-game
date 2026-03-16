@@ -295,24 +295,15 @@ private extension GameScene {
 
 private extension GameScene {
     func spawnScorePopup(at position: CGPoint, points: Int) {
-        let label = SKLabelNode(fontNamed: Theme.Font.bold)
-        label.text = "+\(points)"
-        label.fontSize = Theme.FontSize.small
-        label.fontColor = Theme.Color.accent
-        label.position = position
-        label.zPosition = 5
-        let move = SKAction.moveBy(x: 0, y: 40, duration: 0.6)
-        let fade = SKAction.sequence([.wait(forDuration: 0.2), .fadeOut(withDuration: 0.4)])
-        let remove = SKAction.removeFromParent()
-        label.run(.sequence([.group([move, fade]), remove]))
-        addChild(label)
+        let popup = ScorePopupNode(points: points)
+        popup.position = position
+        addChild(popup)
     }
 
     func spawnSparks(at position: CGPoint, color: UIColor) {
-        let emitter = makeBrickSparkEmitter(color: color)
-        emitter.position = position
-        addChild(emitter)
-        emitter.run(.sequence([.wait(forDuration: 0.6), .removeFromParent()]))
+        let sparks = BrickSparkNode(color: color)
+        sparks.position = position
+        addChild(sparks)
     }
 
     func spawnLaunchRipple(at position: CGPoint) {
