@@ -152,6 +152,33 @@ struct GameStateTests {
         #expect(state.score == 50)
     }
 
+    // MARK: - addLife
+
+    @Test func addLife_whilePlaying_incrementsLives() {
+        let state = GameState(lives: 2).launch().addLife()
+        #expect(state.lives == 3)
+    }
+
+    @Test func addLife_preservesPhaseAndScore() {
+        let state = GameState(lives: 2).launch().addScore(50).addLife()
+        #expect(state.phase == .playing)
+        #expect(state.score == 50)
+    }
+
+    @Test func addLife_whileWaitingToLaunch_isIgnored() {
+        #expect(GameState(lives: 2).addLife().lives == 2)
+    }
+
+    @Test func addLife_whilePaused_isIgnored() {
+        let state = GameState(lives: 2).launch().pause().addLife()
+        #expect(state.lives == 2)
+    }
+
+    @Test func addLife_whileGameOver_isIgnored() {
+        let state = GameState(lives: 1).launch().ballLost().addLife()
+        #expect(state.lives == 0)
+    }
+
     // MARK: - Value semantics
 
     @Test func copy_originalUnchangedAfterTransition() {

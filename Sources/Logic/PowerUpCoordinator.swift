@@ -1,5 +1,11 @@
 import SpriteKit
 
+enum CollectResult {
+    case activated(PowerUpType)
+    case instant(PowerUpType)
+    case none
+}
+
 final class PowerUpCoordinator {
     private weak var scene: SKScene?
     private weak var ball: BallNode?
@@ -45,19 +51,19 @@ final class PowerUpCoordinator {
     }
 
     @discardableResult
-    func collect(_ node: PowerUpNode) -> PowerUpType? {
+    func collect(_ node: PowerUpNode) -> CollectResult {
         node.removeFromParent()
         nodes.removeAll { $0 === node }
-        let newState = state.collect(node.type)
-        // Instant effects (duration == nil) are silently ignored here;
-        // add dispatch before introducing a nil-duration case.
-        guard newState.isActive else { return nil }
+        let type = node.type
+        guard type.duration != nil else { return .instant(type) }
+        let newState = state.collect(type)
+        guard newState.isActive else { return .none }
         if let previous = state.active {
             removeEffect(for: previous)
         }
         state = newState
-        applyEffect(for: node.type)
-        return node.type
+        applyEffect(for: type)
+        return .activated(type)
     }
 
     func clearAll() {
@@ -77,6 +83,7 @@ final class PowerUpCoordinator {
         case .powerBall: ball?.activatePowerBall()
         case .widePaddle: paddle?.activateWidePaddle()
         case .slowBall: ball?.activateSlowBall()
+        case .extraLife: break  // instant effect; handled by caller via CollectResult
         }
     }
 
@@ -85,6 +92,7 @@ final class PowerUpCoordinator {
         case .powerBall: ball?.deactivatePowerBall()
         case .widePaddle: paddle?.deactivateWidePaddle()
         case .slowBall: ball?.deactivateSlowBall()
+        case .extraLife: break  // no ongoing effect to remove
         }
     }
 }

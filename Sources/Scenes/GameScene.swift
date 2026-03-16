@@ -142,8 +142,15 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
             handleBrickContact(brick, contactPoint: contact.contactPoint)
         } else if let node = (contact.bodyA.node as? PowerUpNode)
             ?? (contact.bodyB.node as? PowerUpNode) {
-            if let type = powerUp.collect(node) {
+            switch powerUp.collect(node) {
+            case .activated(let type):
                 spawnPowerUpActivationEffect(for: type)
+            case .instant(.extraLife):
+                gameState = gameState.addLife()
+                gameCamera.updateHUD(lives: gameState.lives, score: gameState.score)
+                spawnPowerUpActivationEffect(for: .extraLife)
+            case .instant, .none:
+                break
             }
         } else if contact.bodyA.categoryBitMask == PhysicsCategory.paddle
             || contact.bodyB.categoryBitMask == PhysicsCategory.paddle {
@@ -295,6 +302,10 @@ private extension GameScene {
         case .slowBall:
             spawnRippleRing(at: ball.position, delay: 0, scale: 5.0, alpha: 1.0, lineWidth: 2.0)
             spawnRippleRing(at: ball.position, delay: 0.1, scale: 7.0, alpha: 0.5, lineWidth: 1.5)
+        case .extraLife:
+            spawnRippleRing(at: ball.position, delay: 0, scale: 4.0, alpha: 1.0, lineWidth: 2.5)
+            spawnRippleRing(at: ball.position, delay: 0.08, scale: 6.0, alpha: 0.6, lineWidth: 1.5)
+            spawnRippleRing(at: ball.position, delay: 0.16, scale: 8.0, alpha: 0.3, lineWidth: 1.0)
         }
     }
 

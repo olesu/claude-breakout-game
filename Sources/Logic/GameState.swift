@@ -44,6 +44,11 @@ struct GameState {
         return GameState(phase: .playing, lives: lives, score: score)
     }
 
+    func addLife() -> GameState {
+        guard phase == .playing else { return self }
+        return GameState(phase: phase, lives: lives + 1, score: score)
+    }
+
     func resetForNextLevel() -> GameState {
         guard phase == .playing else { return self }
         return GameState(phase: .waitingToLaunch, lives: lives, score: score)

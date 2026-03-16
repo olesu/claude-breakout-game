@@ -17,6 +17,10 @@ struct PowerUpTypeTests {
         #expect(PowerUpType.slowBall.label == "SB")
     }
 
+    @Test func extraLife_label_isPlusOne() {
+        #expect(PowerUpType.extraLife.label == "+1")
+    }
+
     // MARK: - duration
 
     @Test func powerBall_duration_matchesThemeConstant() {
@@ -29,6 +33,10 @@ struct PowerUpTypeTests {
 
     @Test func slowBall_duration_matchesThemeConstant() {
         #expect(PowerUpType.slowBall.duration == Theme.Layout.powerUpDuration)
+    }
+
+    @Test func extraLife_duration_isNil() {
+        #expect(PowerUpType.extraLife.duration == nil)
     }
 
 }
