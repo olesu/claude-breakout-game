@@ -21,6 +21,7 @@ final class BrickSparkNode: SKEmitterNode {
         particleColorBlendFactor = 1.0
         zPosition = 4
 
+        // 0.6 s > particleLifetime + particleLifetimeRange/2 (≈ 0.43 s max particle life)
         run(.sequence([.wait(forDuration: 0.6), .removeFromParent()]))
     }
 
