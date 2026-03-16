@@ -17,6 +17,7 @@ struct PowerUpState {
     var isActive: Bool { active != nil }
 
     func collect(_ type: PowerUpType) -> PowerUpState {
+        // Types with no duration are instant effects; handled by the coordinator directly.
         guard let duration = type.duration else { return self }
         return PowerUpState(active: type, timeRemaining: duration)
     }

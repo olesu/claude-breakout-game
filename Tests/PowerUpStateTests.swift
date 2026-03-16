@@ -32,7 +32,8 @@ struct PowerUpStateTests {
         #expect(PowerUpState().collect(.powerBall).isActive == true)
     }
 
-    @Test func collect_whenAlreadyActive_replacesActiveType() {
+    // Cross-type replacement will need separate coverage once a second PowerUpType case exists.
+    @Test func collect_whenAlreadyActive_resetsState() {
         let state = PowerUpState().collect(.powerBall).collect(.powerBall)
         #expect(state.active == .powerBall)
     }
