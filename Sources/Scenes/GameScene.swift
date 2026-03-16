@@ -129,7 +129,7 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
         let x = clampedPaddleX(
             touchX: touch.location(in: self).x,
             sceneWidth: frame.width,
-            halfPaddleWidth: paddle.size.width * paddle.xScale / 2
+            halfPaddleWidth: paddle.size.width * paddle.xScale / 2  // xScale grows with wide paddle
         )
         paddle.position.x = x
     }
@@ -142,8 +142,9 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
             handleBrickContact(brick, contactPoint: contact.contactPoint)
         } else if let node = (contact.bodyA.node as? PowerUpNode)
             ?? (contact.bodyB.node as? PowerUpNode) {
-            powerUp.collect(node)
-            spawnPowerBallActivationEffect()
+            if let type = powerUp.collect(node) {
+                spawnPowerUpActivationEffect(for: type)
+            }
         } else if contact.bodyA.categoryBitMask == PhysicsCategory.paddle
             || contact.bodyB.categoryBitMask == PhysicsCategory.paddle {
             paddle.squash()
@@ -283,9 +284,15 @@ private extension GameScene {
         spawnRippleRing(at: position, delay: 0.12, scale: 5.0, alpha: 0.6, lineWidth: 1.5)
     }
 
-    func spawnPowerBallActivationEffect() {
-        spawnRippleRing(at: ball.position, delay: 0, scale: 6.0, alpha: 1.0, lineWidth: 2.5)
-        spawnRippleRing(at: ball.position, delay: 0.1, scale: 8.0, alpha: 0.5, lineWidth: 1.5)
+    func spawnPowerUpActivationEffect(for type: PowerUpType) {
+        switch type {
+        case .powerBall:
+            spawnRippleRing(at: ball.position, delay: 0, scale: 6.0, alpha: 1.0, lineWidth: 2.5)
+            spawnRippleRing(at: ball.position, delay: 0.1, scale: 8.0, alpha: 0.5, lineWidth: 1.5)
+        case .widePaddle:
+            spawnRippleRing(at: paddle.position, delay: 0, scale: 5.0, alpha: 1.0, lineWidth: 2.0)
+            spawnRippleRing(at: paddle.position, delay: 0.1, scale: 7.0, alpha: 0.5, lineWidth: 1.5)
+        }
     }
 
     func spawnRippleRing(

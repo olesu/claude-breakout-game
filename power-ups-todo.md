@@ -9,7 +9,7 @@
 
 ## Simple (no new game objects)
 
-- [ ] Wide Paddle (`WP`) — paddle grows 1.5x for 8s, smooth width animation
+- [x] Wide Paddle (`WP`) — paddle grows 1.5x for 8s, smooth width animation
 - [ ] Slow Ball (`SB`) — ball speed reduced 40% for 8s
 - [ ] Extra Life (`+1`) — instant extra life, no duration
 

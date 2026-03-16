@@ -15,12 +15,12 @@ struct PowerUpTypeTests {
 
     // MARK: - duration
 
-    @Test func powerBall_duration_isEightSeconds() {
-        #expect(PowerUpType.powerBall.duration == 8.0)
+    @Test func powerBall_duration_matchesThemeConstant() {
+        #expect(PowerUpType.powerBall.duration == Theme.Layout.powerUpDuration)
     }
 
-    @Test func widePaddle_duration_isEightSeconds() {
-        #expect(PowerUpType.widePaddle.duration == 8.0)
+    @Test func widePaddle_duration_matchesThemeConstant() {
+        #expect(PowerUpType.widePaddle.duration == Theme.Layout.powerUpDuration)
     }
 
 }

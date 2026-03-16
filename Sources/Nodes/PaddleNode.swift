@@ -18,13 +18,16 @@ final class PaddleNode: SKSpriteNode {
     }
 
     func activateWidePaddle() {
-        removeAction(forKey: "widePaddle")
-        run(.scaleX(to: Theme.Layout.paddleWidthMultiplier, duration: 0.25), withKey: "widePaddle")
+        removeAction(forKey: Self.widePaddleKey)
+        run(
+            .scaleX(to: Theme.Layout.paddleWidthMultiplier, duration: 0.25),
+            withKey: Self.widePaddleKey
+        )
     }
 
     func deactivateWidePaddle() {
-        removeAction(forKey: "widePaddle")
-        run(.scaleX(to: 1.0, duration: 0.25), withKey: "widePaddle")
+        removeAction(forKey: Self.widePaddleKey)
+        run(.scaleX(to: 1.0, duration: 0.25), withKey: Self.widePaddleKey)
     }
 
     func squash() {
@@ -38,4 +41,6 @@ final class PaddleNode: SKSpriteNode {
 
     @available(*, unavailable)
     required init?(coder aDecoder: NSCoder) { fatalError() }
+
+    private static let widePaddleKey = "widePaddle"
 }

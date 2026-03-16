@@ -35,6 +35,7 @@ final class PowerUpCoordinator {
         guard !state.isActive,
               Double.random(in: 0..<1) < Theme.Layout.powerUpDropProbability,
               let scene else { return }
+        // Safe: allCases is always non-empty for a non-empty enum.
         let type = PowerUpType.allCases.randomElement()!
         let node = PowerUpNode(type: type)
         node.position = position
@@ -43,16 +44,19 @@ final class PowerUpCoordinator {
         nodes.append(node)
     }
 
-    func collect(_ node: PowerUpNode) {
+    @discardableResult
+    func collect(_ node: PowerUpNode) -> PowerUpType? {
         node.removeFromParent()
         nodes.removeAll { $0 === node }
         let newState = state.collect(node.type)
-        guard newState.isActive else { return }
+        // Instant effects (duration == nil) are not yet dispatched here.
+        guard newState.isActive else { return nil }
         if state.isActive, let previous = state.active {
             removeEffect(for: previous)
         }
         state = newState
         applyEffect(for: node.type)
+        return node.type
     }
 
     func clearAll() {
