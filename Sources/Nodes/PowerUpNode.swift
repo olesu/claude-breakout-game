@@ -1,7 +1,10 @@
 import SpriteKit
 
 final class PowerUpNode: SKNode {
-    override init() {
+    let type: PowerUpType
+
+    init(type: PowerUpType) {
+        self.type = type
         super.init()
 
         let size = Theme.Layout.powerUpSize
@@ -29,13 +32,13 @@ final class PowerUpNode: SKNode {
         path.addRoundedRect(in: rect, cornerWidth: size.height / 2, cornerHeight: size.height / 2)
         let shape = SKShapeNode(path: path)
         shape.fillColor = .clear
-        shape.strokeColor = Theme.Color.powerUp
+        shape.strokeColor = type.nodeColor
         shape.lineWidth = 1.5
 
         let label = SKLabelNode(fontNamed: Theme.Font.bold)
-        label.text = "PB"
+        label.text = type.label
         label.fontSize = 10
-        label.fontColor = Theme.Color.powerUp
+        label.fontColor = type.nodeColor
         label.verticalAlignmentMode = .center
 
         bloom.addChild(shape)
@@ -50,4 +53,12 @@ final class PowerUpNode: SKNode {
 
     @available(*, unavailable)
     required init?(coder aDecoder: NSCoder) { fatalError() }
+}
+
+private extension PowerUpType {
+    var nodeColor: UIColor {
+        switch self {
+        case .powerBall: return Theme.Color.powerUp
+        }
+    }
 }
