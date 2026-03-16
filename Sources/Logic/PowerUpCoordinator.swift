@@ -41,7 +41,9 @@ final class PowerUpCoordinator {
     func collect(_ node: PowerUpNode, ball: BallNode) {
         node.removeFromParent()
         nodes.removeAll { $0 === node }
-        state = state.collect(node.type)
+        let newState = state.collect(node.type)
+        guard newState.isActive else { return }
+        state = newState
         ball.activatePowerBall()
     }
 
@@ -50,6 +52,7 @@ final class PowerUpCoordinator {
             state = state.clear()
             ball.deactivatePowerBall()
         }
+        // Nodes may be falling but not yet collected; always clear them.
         nodes.forEach { $0.removeFromParent() }
         nodes.removeAll()
     }
