@@ -85,6 +85,7 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
         case .advanceLevel:   advanceLevel()
         }
 
+        enforceMinimumVerticalSpeed()
         powerUp.update(delta: delta)
     }
 
@@ -157,6 +158,7 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
         } else if contact.bodyA.categoryBitMask == PhysicsCategory.paddle
             || contact.bodyB.categoryBitMask == PhysicsCategory.paddle {
             paddle.squash()
+            reflectBallOffPaddle(contactPoint: contact.contactPoint)
         }
     }
 
@@ -228,6 +230,31 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
     private func resetBall() {
         ball.physicsBody?.velocity = .zero
         ball.position = restingBallPosition()
+    }
+
+    /// Overrides ball velocity based on where it hit the paddle.
+    /// Ignores sub-paddle contacts (physics glitch guard).
+    private func reflectBallOffPaddle(contactPoint: CGPoint) {
+        guard contactPoint.y >= paddle.position.y, let body = ball.physicsBody else { return }
+        let speed = hypot(body.velocity.dx, body.velocity.dy)
+        let halfWidth = paddle.size.width * paddle.xScale / 2
+        body.velocity = paddleReflectedVelocity(
+            speed: speed,
+            contactX: contactPoint.x,
+            paddleCenterX: paddle.position.x,
+            halfPaddleWidth: halfWidth,
+            maxAngle: Theme.Layout.paddleMaxAngle
+        )
+    }
+
+    /// Safety net against near-horizontal trajectories from wall/brick bounces.
+    /// Paddle bounces are already angle-controlled by reflectBallOffPaddle.
+    private func enforceMinimumVerticalSpeed() {
+        guard gameState.phase == .playing, let body = ball.physicsBody else { return }
+        body.velocity = clampedVerticalVelocity(
+            velocity: body.velocity,
+            minVerticalRatio: Theme.Layout.ballMinVerticalRatio
+        )
     }
 
     private func restingBallPosition() -> CGPoint {
@@ -318,22 +345,11 @@ private extension GameScene {
         alpha: CGFloat,
         lineWidth: CGFloat
     ) {
-        let ring = SKShapeNode(circleOfRadius: Theme.Layout.ballRadius)
-        ring.fillColor = .clear
-        ring.strokeColor = .white
-        ring.lineWidth = lineWidth
-        ring.alpha = 0
-        ring.zPosition = 3
+        let ring = RingNode(
+            radius: Theme.Layout.ballRadius, delay: delay,
+            scale: scale, alpha: alpha, lineWidth: lineWidth
+        )
         ring.position = position
         addChild(ring)
-        ring.run(.sequence([
-            .wait(forDuration: delay),
-            .fadeAlpha(to: alpha, duration: 0),
-            .group([
-                .scale(to: scale, duration: 0.5),
-                .fadeOut(withDuration: 0.5)
-            ]),
-            .removeFromParent()
-        ]))
     }
 }

@@ -61,5 +61,7 @@ enum Theme {
         static let powerUpDropProbability: Double = 0.12
         static let paddleWidthMultiplier: CGFloat = 1.5
         static let slowBallFactor: CGFloat = 0.6
+        static let paddleMaxAngle: CGFloat = .pi / 3     // 60° from vertical at paddle edge
+        static let ballMinVerticalRatio: CGFloat = 0.2   // safety-net: minimum |dy| / speed
     }
 }

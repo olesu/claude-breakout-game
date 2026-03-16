@@ -186,17 +186,6 @@ visible affordance so players can discover the feature.
 
 ---
 
-## Known Issues
-
-- **Shallow ball angle** — SpriteKit's elastic physics preserves the angle of incidence,
-  so the ball can enter a near-horizontal trajectory and bounce a long time before
-  reaching the paddle. Two complementary fixes identified:
-  1. Enforce a minimum `|dy|` in `update(_:)` — clamp the vertical velocity component
-     and re-normalise to constant speed. Simple safety net.
-  2. Controlled paddle reflection — compute outgoing angle from where the ball hits
-     the paddle (left edge → steep left, centre → up, right edge → steep right)
-     instead of relying on physics. Better feel; also a natural v1.0 improvement.
-
 ---
 
 ## Technical Notes
