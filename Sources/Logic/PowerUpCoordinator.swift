@@ -76,6 +76,7 @@ final class PowerUpCoordinator {
         switch type {
         case .powerBall: ball?.activatePowerBall()
         case .widePaddle: paddle?.activateWidePaddle()
+        case .slowBall: ball?.activateSlowBall()
         }
     }
 
@@ -83,6 +84,7 @@ final class PowerUpCoordinator {
         switch type {
         case .powerBall: ball?.deactivatePowerBall()
         case .widePaddle: paddle?.deactivateWidePaddle()
+        case .slowBall: ball?.deactivateSlowBall()
         }
     }
 }

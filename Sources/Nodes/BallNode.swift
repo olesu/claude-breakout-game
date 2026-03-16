@@ -53,6 +53,20 @@ final class BallNode: SKNode {
         bloom.shouldRasterize = true
     }
 
+    func activateSlowBall() {
+        guard let body = physicsBody else { return }
+        let f = Theme.Layout.slowBallFactor
+        body.velocity = CGVector(dx: body.velocity.dx * f, dy: body.velocity.dy * f)
+        shape.fillColor = Theme.Color.slowBall
+    }
+
+    func deactivateSlowBall() {
+        guard let body = physicsBody else { return }
+        let f = 1.0 / Theme.Layout.slowBallFactor
+        body.velocity = CGVector(dx: body.velocity.dx * f, dy: body.velocity.dy * f)
+        shape.fillColor = Theme.Color.primary
+    }
+
     func deactivatePowerBall() {
         isPowerBall = false
         physicsBody?.collisionBitMask =

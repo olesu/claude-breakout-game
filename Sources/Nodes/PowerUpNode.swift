@@ -60,6 +60,7 @@ private extension PowerUpType {
         switch self {
         case .powerBall: return Theme.Color.powerUp
         case .widePaddle: return Theme.Color.widePaddle
+        case .slowBall: return Theme.Color.slowBall
         }
     }
 }

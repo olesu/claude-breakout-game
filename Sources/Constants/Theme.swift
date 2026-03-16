@@ -20,6 +20,7 @@ enum Theme {
         static let brick: UIColor = .cyan
         static let powerUp: UIColor = UIColor(red: 1.0, green: 0.45, blue: 0.05, alpha: 1)
         static let widePaddle: UIColor = UIColor(red: 0.0, green: 0.95, blue: 1.0, alpha: 1)
+        static let slowBall: UIColor = UIColor(red: 0.4, green: 0.8, blue: 1.0, alpha: 1)
         static let brickColors: [UIColor] = [
             UIColor(red: 1.0, green: 0.35, blue: 0.35, alpha: 1), // coral-red
             UIColor(red: 1.0, green: 0.6, blue: 0.1, alpha: 1), // orange
@@ -58,5 +59,6 @@ enum Theme {
         static let powerUpDuration: TimeInterval = 8.0
         static let powerUpDropProbability: Double = 0.12
         static let paddleWidthMultiplier: CGFloat = 1.5
+        static let slowBallFactor: CGFloat = 0.6
     }
 }

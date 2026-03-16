@@ -292,6 +292,9 @@ private extension GameScene {
         case .widePaddle:
             spawnRippleRing(at: paddle.position, delay: 0, scale: 5.0, alpha: 1.0, lineWidth: 2.0)
             spawnRippleRing(at: paddle.position, delay: 0.1, scale: 7.0, alpha: 0.5, lineWidth: 1.5)
+        case .slowBall:
+            spawnRippleRing(at: ball.position, delay: 0, scale: 5.0, alpha: 1.0, lineWidth: 2.0)
+            spawnRippleRing(at: ball.position, delay: 0.1, scale: 7.0, alpha: 0.5, lineWidth: 1.5)
         }
     }
 
