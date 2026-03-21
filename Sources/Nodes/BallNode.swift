@@ -5,6 +5,7 @@ final class BallNode: SKNode {
     private(set) var isPowerBall: Bool = false
     private let shape: SKShapeNode
     private let bloom: SKEffectNode
+    private let trail: BallTrailNode
     private var speedBeforeSlowBall: CGFloat?
 
     init(radius: CGFloat) {
@@ -28,6 +29,7 @@ final class BallNode: SKNode {
 
         bloom = bloomNode
         shape = shapeNode
+        trail = BallTrailNode()
         super.init()
 
         let body = SKPhysicsBody(circleOfRadius: radius)
@@ -44,6 +46,13 @@ final class BallNode: SKNode {
 
         bloomNode.addChild(shapeNode)
         addChild(bloomNode)
+        addChild(trail)
+    }
+
+    /// Wire the trail's targetNode so particles stay in scene coordinates as the ball moves.
+    /// Call this once after the ball is added to the scene.
+    func attachTrail(to scene: SKScene) {
+        trail.targetNode = scene
     }
 
     func activatePowerBall() {
@@ -52,6 +61,7 @@ final class BallNode: SKNode {
         shape.fillColor = Theme.Color.powerUp
         (bloom.filter as? CIFilter)?.setValue(16.0, forKey: "inputRadius")
         bloom.shouldRasterize = true
+        trail.activate(color: Theme.Color.powerUp)
     }
 
     func activateSlowBall() {
@@ -61,6 +71,7 @@ final class BallNode: SKNode {
         let f = Theme.Layout.slowBallFactor
         body.velocity = CGVector(dx: body.velocity.dx * f, dy: body.velocity.dy * f)
         shape.fillColor = Theme.Color.slowBall
+        trail.activate(color: Theme.Color.slowBall)
     }
 
     func deactivateSlowBall() {
@@ -72,6 +83,7 @@ final class BallNode: SKNode {
         }
         speedBeforeSlowBall = nil
         shape.fillColor = isPowerBall ? Theme.Color.powerUp : Theme.Color.primary
+        trail.activate(color: isPowerBall ? Theme.Color.powerUp : Theme.Color.primary)
     }
 
     func deactivatePowerBall() {
@@ -81,6 +93,7 @@ final class BallNode: SKNode {
         shape.fillColor = Theme.Color.primary
         (bloom.filter as? CIFilter)?.setValue(8.0, forKey: "inputRadius")
         bloom.shouldRasterize = true
+        trail.deactivate()
     }
 
     @available(*, unavailable)

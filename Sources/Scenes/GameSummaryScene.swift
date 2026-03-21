@@ -17,6 +17,9 @@ final class GameSummaryScene: SKScene {
 
     override func didMove(to view: SKView) {
         backgroundColor = .black
+        let starfield = AmbientStarfieldNode(sceneSize: size)
+        starfield.position = CGPoint(x: frame.midX, y: frame.maxY)
+        addChild(starfield)
 
         let titleText = outcome == .victory ? "YOU WIN" : "GAME OVER"
         let titleColor = outcome == .victory ? Theme.Color.accent : Theme.Color.danger
@@ -49,6 +52,12 @@ final class GameSummaryScene: SKScene {
             .fadeAlpha(to: 1.0, duration: 0.8)
         ])
         prompt.run(.repeatForever(pulse))
+
+        if outcome == .victory {
+            let burst = VictoryBurstNode(sceneSize: size)
+            burst.position = CGPoint(x: frame.midX, y: frame.midY - 40)
+            addChild(burst)
+        }
     }
 
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {

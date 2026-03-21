@@ -7,6 +7,9 @@ final class SplashScene: SKScene {
     override func didMove(to view: SKView) {
         backgroundColor = .black
         savedGame = saveStore.load()
+        let starfield = AmbientStarfieldNode(sceneSize: size)
+        starfield.position = CGPoint(x: frame.midX, y: frame.maxY)
+        addChild(starfield)
 
         let title = SKLabelNode.makeTitle("BREAKOUT")
         title.position = CGPoint(x: frame.midX, y: frame.midY + Theme.Layout.titleOffsetY)

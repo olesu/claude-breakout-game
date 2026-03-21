@@ -1,13 +1,39 @@
+import CoreImage
 import SpriteKit
 
 final class PaddleNode: SKSpriteNode {
     private static let widePaddleKey = "widePaddle"
     private static let squashKey = "squash"
 
+    // Glow overlay: a rounded-rect shape inside a bloom effect node.
+    private let glowShape: SKShapeNode
+
     init(sceneWidth: CGFloat) {
         let width = sceneWidth * Theme.Layout.paddleWidthRatio
         let height = Theme.Layout.paddleHeight
         let size = CGSize(width: width, height: height)
+
+        let bloomNode = SKEffectNode()
+        if let filter = CIFilter(name: "CIBloom") {
+            filter.setValue(10.0, forKey: "inputRadius")
+            filter.setValue(0.8, forKey: "inputIntensity")
+            bloomNode.filter = filter
+            bloomNode.shouldRasterize = true
+        }
+        bloomNode.zPosition = 1
+
+        let rect = CGRect(x: -width / 2, y: -height / 2, width: width, height: height)
+        let glowPath = CGPath(
+            roundedRect: rect, cornerWidth: height / 2, cornerHeight: height / 2, transform: nil
+        )
+        let glowNode = SKShapeNode(path: glowPath)
+        glowNode.fillColor = Theme.Color.primary
+        glowNode.strokeColor = Theme.Color.primary
+        glowNode.lineWidth = 2
+        glowNode.alpha = 0.55
+
+        glowShape = glowNode
+
         super.init(texture: nil, color: Theme.Color.primary, size: size)
 
         let body = SKPhysicsBody(rectangleOf: size)
@@ -18,6 +44,9 @@ final class PaddleNode: SKSpriteNode {
         body.collisionBitMask = PhysicsCategory.ball
         body.contactTestBitMask = PhysicsCategory.ball | PhysicsCategory.powerUp
         physicsBody = body
+
+        bloomNode.addChild(glowNode)
+        addChild(bloomNode)
     }
 
     func activateWidePaddle() {
@@ -26,11 +55,13 @@ final class PaddleNode: SKSpriteNode {
             .scaleX(to: Theme.Layout.paddleWidthMultiplier, duration: 0.25),
             withKey: Self.widePaddleKey
         )
+        setGlowColor(Theme.Color.widePaddle)
     }
 
     func deactivateWidePaddle() {
         removeAction(forKey: Self.widePaddleKey)
         run(.scaleX(to: 1.0, duration: 0.25), withKey: Self.widePaddleKey)
+        setGlowColor(Theme.Color.primary)
     }
 
     func squash() {
@@ -40,6 +71,12 @@ final class PaddleNode: SKSpriteNode {
             .scaleY(to: 1.10, duration: 0.08),
             .scaleY(to: 1.00, duration: 0.06)
         ]), withKey: Self.squashKey)
+    }
+
+    private func setGlowColor(_ tint: UIColor) {
+        glowShape.fillColor = tint
+        glowShape.strokeColor = tint
+        color = tint
     }
 
     @available(*, unavailable)

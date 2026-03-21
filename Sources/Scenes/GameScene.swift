@@ -45,6 +45,9 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
         physicsWorld.gravity = .zero
         physicsWorld.contactDelegate = self
         makeWallNodes(for: frame).forEach { addChild($0) }
+        let starfield = AmbientStarfieldNode(sceneSize: size)
+        starfield.position = CGPoint(x: frame.midX, y: frame.maxY)
+        addChild(starfield)
         setupNodes()
     }
 
@@ -56,6 +59,7 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
         ball = BallNode(radius: Theme.Layout.ballRadius)
         ball.position = restingBallPosition()
         addChild(ball)
+        ball.attachTrail(to: self)
 
         bricks = makeBrickNodes(for: level, sceneFrame: frame, savedGrid: savedBrickGrid)
         bricks.forEach { addChild($0) }
@@ -208,6 +212,7 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
         // Visual side-effects
         gameCamera.shake()
         gameCamera.updateHUD(lives: gameState.lives, score: gameState.score)
+        spawnBallLossFlash()
 
         // Scene transition (happens last)
         if isGameOver {
@@ -327,6 +332,19 @@ private extension GameScene {
             spawnRippleRing(at: ball.position, delay: 0.08, scale: 6.0, alpha: 0.6, lineWidth: 1.5)
             spawnRippleRing(at: ball.position, delay: 0.16, scale: 8.0, alpha: 0.3, lineWidth: 1.0)
         }
+    }
+
+    func spawnBallLossFlash() {
+        let flash = SKSpriteNode(color: Theme.Color.danger, size: size)
+        flash.position = CGPoint(x: frame.midX, y: frame.midY)
+        flash.alpha = 0
+        flash.zPosition = 20
+        addChild(flash)
+        flash.run(.sequence([
+            .fadeAlpha(to: 0.35, duration: 0.05),
+            .fadeOut(withDuration: 0.30),
+            .removeFromParent()
+        ]))
     }
 
     func spawnRippleRing(
