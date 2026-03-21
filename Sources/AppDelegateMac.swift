@@ -5,6 +5,8 @@ import SpriteKit
 @main
 final class AppDelegate: NSObject, NSApplicationDelegate {
     private var window: NSWindow!
+    private var containerView: NSView!
+    private var skView: SKView!
     private var didEnterFullScreen = false
 
     static func main() {
@@ -26,14 +28,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         )
         window.collectionBehavior = [.fullScreenPrimary]
 
-        let skView = SKView(frame: NSRect(origin: .zero, size: contentSize))
+        containerView = NSView(frame: NSRect(origin: .zero, size: contentSize))
+        containerView.autoresizingMask = [.width, .height]
+
+        skView = SKView(frame: NSRect(origin: .zero, size: contentSize))
         skView.autoresizingMask = [.width, .height]
 
         let scene = SplashScene(size: contentSize)
         scene.scaleMode = .aspectFit
         skView.presentScene(scene)
 
-        window.contentView = skView
+        containerView.addSubview(skView)
+        window.contentView = containerView
         window.delegate = self
         window.center()
         window.makeKeyAndOrderFront(nil)
@@ -68,6 +74,23 @@ extension AppDelegate: NSWindowDelegate {
             guard let window = self?.window else { return }
             window.toggleFullScreen(nil)
         }
+    }
+
+    func windowDidEnterFullScreen(_ notification: Notification) {
+        // Remove stale bars from any previous fullscreen session.
+        containerView.subviews
+            .filter { $0 is LetterboxBarView }
+            .forEach { $0.removeFromSuperview() }
+        let size = containerView.bounds.size
+        let scale = size.height / 844.0
+        let barWidth = (size.width - 390.0 * scale) / 2.0
+        guard barWidth > 1 else { return }
+        let leftFrame = NSRect(x: 0, y: 0, width: barWidth, height: size.height)
+        let rightFrame = NSRect(
+            x: size.width - barWidth, y: 0, width: barWidth, height: size.height
+        )
+        containerView.addSubview(LetterboxBarView(frame: leftFrame, side: .left))
+        containerView.addSubview(LetterboxBarView(frame: rightFrame, side: .right))
     }
 }
 #endif
