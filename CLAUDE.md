@@ -34,20 +34,20 @@ open BreakoutGame.xcodeproj
 
 ## Build & Test
 
-After implementing code changes, always run `scripts/build.sh`. It lints, generates
-the Xcode project, builds, and runs all tests.
+`scripts/build.sh` lints, generates the Xcode project, builds, and runs all tests.
+The swift-code-reviewer agent runs this automatically after Swift changes.
 
 ## Linting
 
 SwiftLint runs as the first step of `scripts/build.sh` with `--strict` (warnings
-are errors). Configuration is in `.swiftlint.yml`:
+are errors). A PostToolUse hook also runs SwiftLint on each changed file immediately.
+Configuration is in `.swiftlint.yml`:
 
 - Line length limit: 100 characters
 - Short identifier names allowed (e.g. `x`, `y` for coordinates)
 - No trailing commas in collection literals
 
-All code must pass linting before committing.
-
 ## Testing Conventions
 
 Use Swift Testing (`import Testing`, `@Test`, `#expect`) — not XCTest.
+The xctest-violation-checker agent enforces this on test file changes.
