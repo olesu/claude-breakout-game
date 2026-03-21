@@ -27,7 +27,7 @@ final class BallTrailNode: SKEmitterNode {
     }
 
     /// Tint the trail to match the ball's active power-up color.
-    func activate(color: UIColor) {
+    func activate(color: PlatformColor) {
         particleColor = color
     }
 

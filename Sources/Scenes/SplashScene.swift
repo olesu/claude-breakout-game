@@ -36,7 +36,12 @@ final class SplashScene: SKScene {
     }
 
     private func setupNewGameLayout() {
-        let prompt = SKLabelNode.makeBody("Tap to Play")
+        #if os(iOS)
+        let promptText = "Tap to Play"
+        #else
+        let promptText = "Click to Play"
+        #endif
+        let prompt = SKLabelNode.makeBody(promptText)
         prompt.position = CGPoint(x: frame.midX, y: frame.midY + Theme.Layout.promptOffsetY)
         addChild(prompt)
         prompt.run(.repeatForever(.sequence([
@@ -64,11 +69,22 @@ final class SplashScene: SKScene {
         addChild(newGame)
     }
 
+    #if os(iOS)
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
         guard let touch = touches.first else { return }
+        handleInput(at: touch.location(in: self))
+    }
+    #endif
 
+    #if os(macOS)
+    override func mouseDown(with event: NSEvent) {
+        handleInput(at: event.location(in: self))
+    }
+    #endif
+
+    private func handleInput(at location: CGPoint) {
         if let game = savedGame {
-            let tapped = nodes(at: touch.location(in: self))
+            let tapped = nodes(at: location)
             if tapped.contains(where: { $0.name == "resumeButton" }) {
                 present(GameScene(
                     size: size,

@@ -1,4 +1,7 @@
 import SpriteKit
+#if os(macOS)
+import AppKit
+#endif
 
 final class GameScene: SKScene, SKPhysicsContactDelegate {
     private let levelIndex: Int
@@ -13,6 +16,9 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
     private let saveStore = GameSaveStore()
     private var lastUpdateTime: TimeInterval = 0
     private let savedBrickGrid: [[Bool]]?
+    #if os(macOS)
+    private var trackingArea: NSTrackingArea?
+    #endif
 
     init(
         size: CGSize,
@@ -34,8 +40,13 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
     // MARK: - Setup
 
     override func didMove(to view: SKView) {
+        #if os(iOS)
+        let topSafeArea = view.safeAreaInsets.top
+        #else
+        let topSafeArea: CGFloat = 28  // clears the auto-hiding macOS menu bar in fullscreen
+        #endif
         let cam = GameCameraNode(
-            sceneSize: size, levelName: level.name, topSafeArea: view.safeAreaInsets.top
+            sceneSize: size, levelName: level.name, topSafeArea: topSafeArea
         )
         addChild(cam)
         camera = cam
@@ -49,6 +60,16 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
         starfield.position = CGPoint(x: frame.midX, y: frame.maxY)
         addChild(starfield)
         setupNodes()
+        #if os(macOS)
+        let ta = NSTrackingArea(
+            rect: .zero,
+            options: [.mouseMoved, .activeInKeyWindow, .inVisibleRect],
+            owner: view,
+            userInfo: nil
+        )
+        view.addTrackingArea(ta)
+        trackingArea = ta
+        #endif
     }
 
     private func setupNodes() {
@@ -93,8 +114,9 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
         powerUp.update(delta: delta)
     }
 
-    // MARK: - Touch handling
+    // MARK: - Touch / mouse handling
 
+    #if os(iOS)
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
         guard let touch = touches.first else { return }
 
@@ -138,6 +160,47 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
         )
         paddle.position.x = x
     }
+    #endif
+
+    #if os(macOS)
+    private func movePaddle(to x: CGFloat) {
+        paddle.position.x = clampedPaddleX(
+            touchX: x,
+            sceneWidth: frame.width,
+            halfPaddleWidth: paddle.size.width * paddle.xScale / 2
+        )
+    }
+
+    override func mouseMoved(with event: NSEvent) {
+        guard gameState.phase != .paused else { return }
+        movePaddle(to: event.location(in: self).x)
+    }
+
+    override func mouseDown(with event: NSEvent) {
+        let location = event.location(in: self)
+        let onPauseButton = nodes(at: location).contains { $0.name == "pauseButton" }
+        let intent = touchIntent(hitsPauseButton: onPauseButton, phase: gameState.phase)
+
+        switch intent {
+        case .none:
+            break
+        case .pause:
+            gameState = gameState.pause()
+            applyPauseState()
+        case .resume:
+            gameState = gameState.resume()
+            applyPauseState()
+        case .movePaddle:
+            movePaddle(to: location.x)
+        case .launchAndMovePaddle:
+            gameState = gameState.launch()
+            gameCamera.updateHUD(lives: gameState.lives, score: gameState.score)
+            movePaddle(to: location.x)
+            spawnLaunchRipple(at: ball.position)
+            ball.physicsBody?.velocity = Theme.Layout.ballLaunchVelocity
+        }
+    }
+    #endif
 
     // MARK: - Physics contact
 
@@ -180,6 +243,9 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
     }
 
     override func willMove(from view: SKView) {
+        #if os(macOS)
+        if let ta = trackingArea { view.removeTrackingArea(ta) }
+        #endif
         // Skip if already saved by applyPauseState(), or if game has ended / level is advancing.
         guard !levelComplete
             && gameState.phase != .gameOver
@@ -305,7 +371,7 @@ private extension GameScene {
         addChild(popup)
     }
 
-    func spawnSparks(at position: CGPoint, color: UIColor) {
+    func spawnSparks(at position: CGPoint, color: PlatformColor) {
         let sparks = BrickSparkNode(color: color)
         sparks.position = position
         addChild(sparks)

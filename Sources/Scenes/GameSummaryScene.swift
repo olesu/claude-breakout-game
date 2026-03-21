@@ -44,7 +44,12 @@ final class GameSummaryScene: SKScene {
         )
         addChild(highScoreLabel)
 
-        let prompt = SKLabelNode.makeBody("Tap to Play Again")
+        #if os(iOS)
+        let promptText = "Tap to Play Again"
+        #else
+        let promptText = "Click to Play Again"
+        #endif
+        let prompt = SKLabelNode.makeBody(promptText)
         prompt.position = CGPoint(x: frame.midX, y: frame.midY + Theme.Layout.promptOffsetY)
         addChild(prompt)
         let pulse = SKAction.sequence([
@@ -60,7 +65,15 @@ final class GameSummaryScene: SKScene {
         }
     }
 
+    #if os(iOS)
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
         present(SplashScene(size: size))
     }
+    #endif
+
+    #if os(macOS)
+    override func mouseDown(with event: NSEvent) {
+        present(SplashScene(size: size))
+    }
+    #endif
 }

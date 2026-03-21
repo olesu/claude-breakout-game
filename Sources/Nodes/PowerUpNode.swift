@@ -56,7 +56,7 @@ final class PowerUpNode: SKNode {
 }
 
 private extension PowerUpType {
-    var nodeColor: UIColor {
+    var nodeColor: PlatformColor {
         switch self {
         case .powerBall: return Theme.Color.powerUp
         case .widePaddle: return Theme.Color.widePaddle

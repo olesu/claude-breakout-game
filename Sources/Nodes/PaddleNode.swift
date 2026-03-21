@@ -73,7 +73,7 @@ final class PaddleNode: SKSpriteNode {
         ]), withKey: Self.squashKey)
     }
 
-    private func setGlowColor(_ tint: UIColor) {
+    private func setGlowColor(_ tint: PlatformColor) {
         glowShape.fillColor = tint
         glowShape.strokeColor = tint
         color = tint

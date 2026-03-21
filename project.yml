@@ -11,6 +11,8 @@ targets:
     platform: iOS
     sources:
       - path: Sources
+        excludes:
+          - AppDelegateMac.swift
     settings:
       base:
         SWIFT_VERSION: "5.0"
@@ -22,6 +24,24 @@ targets:
         GENERATE_INFOPLIST_FILE: YES
         INFOPLIST_KEY_UILaunchScreen_Generation: YES
         INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone: UIInterfaceOrientationPortrait
+
+  BreakoutGameMac:
+    type: application
+    platform: macOS
+    deploymentTarget: "13.0"
+    sources:
+      - path: Sources
+        excludes:
+          - AppDelegate.swift
+    settings:
+      base:
+        SWIFT_VERSION: "5.0"
+        PRODUCT_BUNDLE_IDENTIFIER: com.example.BreakoutGameMac
+        MARKETING_VERSION: "1.0"
+        CURRENT_PROJECT_VERSION: "1"
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_KEY_NSPrincipalClass: NSApplication
+        INFOPLIST_KEY_CFBundlePackageType: APPL
 
   BreakoutGameTests:
     type: bundle.unit-test

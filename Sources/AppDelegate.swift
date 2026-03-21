@@ -1,3 +1,4 @@
+#if os(iOS)
 import UIKit
 import SpriteKit
 
@@ -27,3 +28,4 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         return true
     }
 }
+#endif

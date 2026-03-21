@@ -3,7 +3,7 @@ import SpriteKit
 /// A one-shot burst of spark particles that removes itself after the emission is complete.
 /// A secondary dust emitter provides slower, larger fragments for an organic destruction feel.
 final class BrickSparkNode: SKNode {
-    init(color: UIColor) {
+    init(color: PlatformColor) {
         super.init()
 
         // Primary: tight fast sparks

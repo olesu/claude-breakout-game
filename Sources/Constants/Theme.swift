@@ -1,4 +1,10 @@
+#if canImport(UIKit)
 import UIKit
+typealias PlatformColor = UIColor
+#else
+import AppKit
+typealias PlatformColor = NSColor
+#endif
 
 enum Theme {
     enum Font {
@@ -13,23 +19,23 @@ enum Theme {
     }
 
     enum Color {
-        static let primary: UIColor = .white
-        static let secondary: UIColor = .lightGray
-        static let accent: UIColor = .yellow
-        static let danger: UIColor = .red
-        static let brick: UIColor = .cyan
-        static let powerUp: UIColor = UIColor(red: 1.0, green: 0.45, blue: 0.05, alpha: 1)
-        static let widePaddle: UIColor = UIColor(red: 0.0, green: 0.95, blue: 1.0, alpha: 1)
-        static let slowBall: UIColor = UIColor(red: 0.4, green: 0.8, blue: 1.0, alpha: 1)
-        static let extraLife: UIColor = UIColor(red: 0.2, green: 1.0, blue: 0.4, alpha: 1)
-        static let brickColors: [UIColor] = [
-            UIColor(red: 1.0, green: 0.35, blue: 0.35, alpha: 1), // coral-red
-            UIColor(red: 1.0, green: 0.6, blue: 0.1, alpha: 1), // orange
-            UIColor(red: 1.0, green: 0.95, blue: 0.2, alpha: 1), // yellow
-            UIColor(red: 0.2, green: 1.0, blue: 0.4, alpha: 1), // green
-            UIColor(red: 0.0, green: 0.95, blue: 1.0, alpha: 1), // cyan
-            UIColor(red: 0.5, green: 0.3, blue: 1.0, alpha: 1), // blue-violet
-            UIColor(red: 0.85, green: 0.2, blue: 1.0, alpha: 1) // purple
+        static let primary: PlatformColor = .white
+        static let secondary: PlatformColor = .lightGray
+        static let accent: PlatformColor = .yellow
+        static let danger: PlatformColor = .red
+        static let brick: PlatformColor = .cyan
+        static let powerUp: PlatformColor = PlatformColor(red: 1.0, green: 0.45, blue: 0.05, alpha: 1)
+        static let widePaddle: PlatformColor = PlatformColor(red: 0.0, green: 0.95, blue: 1.0, alpha: 1)
+        static let slowBall: PlatformColor = PlatformColor(red: 0.4, green: 0.8, blue: 1.0, alpha: 1)
+        static let extraLife: PlatformColor = PlatformColor(red: 0.2, green: 1.0, blue: 0.4, alpha: 1)
+        static let brickColors: [PlatformColor] = [
+            PlatformColor(red: 1.0, green: 0.35, blue: 0.35, alpha: 1), // coral-red
+            PlatformColor(red: 1.0, green: 0.6, blue: 0.1, alpha: 1), // orange
+            PlatformColor(red: 1.0, green: 0.95, blue: 0.2, alpha: 1), // yellow
+            PlatformColor(red: 0.2, green: 1.0, blue: 0.4, alpha: 1), // green
+            PlatformColor(red: 0.0, green: 0.95, blue: 1.0, alpha: 1), // cyan
+            PlatformColor(red: 0.5, green: 0.3, blue: 1.0, alpha: 1), // blue-violet
+            PlatformColor(red: 0.85, green: 0.2, blue: 1.0, alpha: 1) // purple
         ]
     }
 

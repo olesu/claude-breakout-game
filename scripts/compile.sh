@@ -7,11 +7,19 @@ source "$SCRIPT_DIR/common.sh"
 
 CONFIGURATION="${CONFIGURATION:-Debug}"
 
-echo "==> Building $SCHEME..."
+echo "==> Building $SCHEME (iOS)..."
 run_xcodebuild \
   -project "$PROJECT" \
   -scheme "$SCHEME" \
   -destination "platform=iOS Simulator,name=$SIMULATOR" \
+  -configuration "$CONFIGURATION" \
+  build
+
+echo "==> Building BreakoutGameMac (macOS)..."
+run_xcodebuild \
+  -project "$PROJECT" \
+  -scheme "BreakoutGameMac" \
+  -destination "platform=macOS" \
   -configuration "$CONFIGURATION" \
   build
 
