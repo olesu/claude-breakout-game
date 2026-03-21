@@ -12,5 +12,12 @@ xcuserdata/
 # macOS
 .DS_Store
 
-# Claude Code local state
-.claude/
+# Claude Code — ignore machine-local state, track project config
+.claude/settings.local.json
+.claude/agent-memory-local/
+# Allow project-level config and agents
+!.claude/
+!.claude/settings.json
+!.claude/claude.json
+!.claude/agents/
+!.claude/agents/*.md
