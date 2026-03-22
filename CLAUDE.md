@@ -6,7 +6,7 @@ code in this repository.
 ## Project Overview
 
 iOS breakout game built with Swift + SpriteKit. Single-player, portrait orientation,
-touch controls. See `user-story-map.md` for scope and story slices.
+touch controls.
 
 ## Project Setup (XcodeGen)
 
@@ -51,3 +51,11 @@ Configuration is in `.swiftlint.yml`:
 
 Use Swift Testing (`import Testing`, `@Test`, `#expect`) — not XCTest.
 The xctest-violation-checker agent enforces this on test file changes.
+
+## GitHub Issues
+
+When asked about open tasks, issues, or remaining work, check GitHub first:
+
+```bash
+env -u GITHUB_TOKEN gh issue list --state open
+```
