@@ -24,10 +24,14 @@ enum Theme {
         static let accent: PlatformColor = .yellow
         static let danger: PlatformColor = .red
         static let brick: PlatformColor = .cyan
-        static let powerUp: PlatformColor = PlatformColor(red: 1.0, green: 0.45, blue: 0.05, alpha: 1)
-        static let widePaddle: PlatformColor = PlatformColor(red: 0.0, green: 0.95, blue: 1.0, alpha: 1)
-        static let slowBall: PlatformColor = PlatformColor(red: 0.4, green: 0.8, blue: 1.0, alpha: 1)
-        static let extraLife: PlatformColor = PlatformColor(red: 0.2, green: 1.0, blue: 0.4, alpha: 1)
+        static let powerUp: PlatformColor =
+            PlatformColor(red: 1.0, green: 0.45, blue: 0.05, alpha: 1)
+        static let widePaddle: PlatformColor =
+            PlatformColor(red: 0.0, green: 0.95, blue: 1.0, alpha: 1)
+        static let slowBall: PlatformColor =
+            PlatformColor(red: 0.4, green: 0.8, blue: 1.0, alpha: 1)
+        static let extraLife: PlatformColor =
+            PlatformColor(red: 0.2, green: 1.0, blue: 0.4, alpha: 1)
         static let brickColors: [PlatformColor] = [
             PlatformColor(red: 1.0, green: 0.35, blue: 0.35, alpha: 1), // coral-red
             PlatformColor(red: 1.0, green: 0.6, blue: 0.1, alpha: 1), // orange

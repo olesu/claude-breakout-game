@@ -12,9 +12,8 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
     private var ball: BallNode!
     private var bricks: [BrickNode] = []
     private var powerUp: PowerUpCoordinator!
-    private var levelComplete = false
+    private var gameLoop: GameLoopCoordinator!
     private let saveStore = GameSaveStore()
-    private var lastUpdateTime: TimeInterval = 0
     private let savedBrickGrid: [[Bool]]?
     #if os(macOS)
     private var trackingArea: NSTrackingArea?
@@ -78,7 +77,11 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
         addChild(paddle)
 
         ball = BallNode(radius: Theme.Layout.ballRadius)
-        ball.position = restingBallPosition()
+        ball.position = ballRestingPosition(
+            paddlePosition: paddle.position,
+            paddleHalfHeight: paddle.size.height / 2,
+            ballRadius: Theme.Layout.ballRadius
+        )
         addChild(ball)
         ball.attachTrail(to: self)
 
@@ -86,32 +89,17 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
         bricks.forEach { addChild($0) }
 
         powerUp = PowerUpCoordinator(scene: self, ball: ball, paddle: paddle)
+        gameLoop = GameLoopCoordinator(ball: ball, paddle: paddle, powerUp: powerUp)
     }
 
     // MARK: - Game loop
 
     override func update(_ currentTime: TimeInterval) {
-        let delta = lastUpdateTime == 0 ? 0 : currentTime - lastUpdateTime
-        lastUpdateTime = currentTime
-
-        // Pure calculation
-        let action = frameAction(
-            phase: gameState.phase,
-            ballY: ball.position.y,
-            floorY: frame.minY,
-            levelComplete: levelComplete
-        )
-
-        // Apply
-        switch action {
-        case .nothing:        break
-        case .resetBall:      resetBall()
-        case .handleBallLoss: handleBallLoss()
-        case .advanceLevel:   advanceLevel()
+        switch gameLoop.tick(currentTime: currentTime, phase: gameState.phase, floorY: frame.minY) {
+        case .handleBallLoss:    handleBallLoss()
+        case .advanceLevel:      advanceLevel()
+        case .nothing, .resetBall: break
         }
-
-        enforceMinimumVerticalSpeed()
-        powerUp.update(delta: delta)
     }
 
     // MARK: - Touch / mouse handling
@@ -242,7 +230,7 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
         if isPaused {
             saveGame()
         } else {
-            lastUpdateTime = 0
+            gameLoop.resetLastUpdateTime()
         }
     }
 
@@ -251,7 +239,7 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
         if let ta = trackingArea { view.removeTrackingArea(ta) }
         #endif
         // Skip if already saved by applyPauseState(), or if game has ended / level is advancing.
-        guard !levelComplete
+        guard !gameLoop.levelComplete
             && gameState.phase != .gameOver
             && gameState.phase != .paused else { return }
         saveGame()
@@ -304,14 +292,14 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
         }
     }
 
-    private func resetBall() {
-        ball.physicsBody?.velocity = .zero
-        ball.position = restingBallPosition()
-    }
+}
 
+// MARK: - Contact handlers
+
+private extension GameScene {
     /// Overrides ball velocity based on where it hit the paddle.
     /// Ignores sub-paddle contacts (physics glitch guard).
-    private func reflectBallOffPaddle(contactPoint: CGPoint) {
+    func reflectBallOffPaddle(contactPoint: CGPoint) {
         guard contactPoint.y >= paddle.position.y, let body = ball.physicsBody else { return }
         let speed = hypot(body.velocity.dx, body.velocity.dy)
         let halfWidth = paddle.size.width * paddle.xScale / 2
@@ -324,28 +312,6 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
         )
     }
 
-    /// Safety net against near-horizontal trajectories from wall/brick bounces.
-    /// Paddle bounces are already angle-controlled by reflectBallOffPaddle.
-    private func enforceMinimumVerticalSpeed() {
-        guard gameState.phase == .playing, let body = ball.physicsBody else { return }
-        body.velocity = clampedVerticalVelocity(
-            velocity: body.velocity,
-            minVerticalRatio: Theme.Layout.ballMinVerticalRatio
-        )
-    }
-
-    private func restingBallPosition() -> CGPoint {
-        ballRestingPosition(
-            paddlePosition: paddle.position,
-            paddleHalfHeight: paddle.size.height / 2,
-            ballRadius: Theme.Layout.ballRadius
-        )
-    }
-}
-
-// MARK: - Contact handlers
-
-private extension GameScene {
     func handleBrickContact(_ brick: BrickNode, contactPoint: CGPoint) {
         // Capture all inputs before any mutation
         let points = Theme.Layout.brickPoints
@@ -362,7 +328,7 @@ private extension GameScene {
         SceneEffects.spawnSparks(at: contactPoint, color: color).forEach(addChild)
         brick.destroy { [weak self] in
             guard let self else { return }
-            if bricks.isEmpty && !levelComplete { levelComplete = true }
+            if bricks.isEmpty && !gameLoop.levelComplete { gameLoop.markLevelComplete() }
         }
         if spawnPowerUp { powerUp.spawnIfEligible(at: brick.position) }
     }
