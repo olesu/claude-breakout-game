@@ -1,4 +1,13 @@
 {
+  "permissions": {
+    "allow": [
+      "Bash(env -u GITHUB_TOKEN gh issue list*)",
+      "Bash(env -u GITHUB_TOKEN gh issue view*)",
+      "Bash(env -u GITHUB_TOKEN gh issue create*)",
+      "Bash(env -u GITHUB_TOKEN gh label list*)",
+      "Bash(env -u GITHUB_TOKEN gh label create*)"
+    ]
+  },
   "hooks": {
     "PostToolUse": [
       {
