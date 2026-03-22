@@ -15,6 +15,7 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
     private var gameLoop: GameLoopCoordinator!
     private let saveStore = GameSaveStore()
     private let savedBrickGrid: [[Bool]]?
+    private let inputCoordinator = InputCoordinator()
     #if os(macOS)
     private var trackingArea: NSTrackingArea?
     #endif
@@ -104,17 +105,8 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
 
     // MARK: - Touch / mouse handling
 
-    #if os(iOS)
-    override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
-        guard let touch = touches.first else { return }
-
-        // Pure calculation
-        let onPauseButton = nodes(at: touch.location(in: self))
-            .contains { $0.name == "pauseButton" }
-        let intent = touchIntent(hitsPauseButton: onPauseButton, phase: gameState.phase)
-
-        // Apply
-        switch intent {
+    private func handle(_ action: InputAction) {
+        switch action {
         case .none:
             break
         case .pause:
@@ -123,70 +115,56 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
         case .resume:
             gameState = gameState.resume()
             applyPauseState()
-        case .movePaddle:
-            movePaddle(to: touches)
-        case .launchAndMovePaddle:
+        case .movePaddle(let x):
+            movePaddle(to: x)
+        case .launchAndMovePaddle(let x):
             gameState = gameState.launch()
             gameCamera.updateHUD(lives: gameState.lives, score: gameState.score)
-            movePaddle(to: touches)
+            movePaddle(to: x)
             SceneEffects.spawnLaunchRipple(at: ball.position).forEach(addChild)
             ball.physicsBody?.velocity = Theme.Layout.ballLaunchVelocity
         }
     }
 
-    override func touchesMoved(_ touches: Set<UITouch>, with event: UIEvent?) {
-        guard gameState.phase != .paused else { return }
-        movePaddle(to: touches)
-    }
-
-    private func movePaddle(to touches: Set<UITouch>) {
-        guard let touch = touches.first else { return }
-        let x = clampedPaddleX(
-            touchX: touch.location(in: self).x,
-            sceneWidth: frame.width,
-            halfPaddleWidth: paddle.size.width * paddle.xScale / 2  // xScale grows with wide paddle
-        )
-        paddle.position.x = x
-    }
-    #endif
-
-    #if os(macOS)
     private func movePaddle(to x: CGFloat) {
         paddle.position.x = clampedPaddleX(
             touchX: x,
             sceneWidth: frame.width,
-            halfPaddleWidth: paddle.size.width * paddle.xScale / 2
+            halfPaddleWidth: paddle.size.width * paddle.xScale / 2  // xScale grows with wide paddle
         )
     }
 
+    #if os(iOS)
+    override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
+        guard let touch = touches.first else { return }
+        let loc = touch.location(in: self)
+        handle(inputCoordinator.action(
+            at: loc,
+            hittingPauseButton: nodes(at: loc).contains { $0.name == "pauseButton" },
+            phase: gameState.phase
+        ))
+    }
+
+    override func touchesMoved(_ touches: Set<UITouch>, with event: UIEvent?) {
+        guard gameState.phase != .paused else { return }
+        guard let touch = touches.first else { return }
+        movePaddle(to: touch.location(in: self).x)
+    }
+    #endif
+
+    #if os(macOS)
     override func mouseMoved(with event: NSEvent) {
         guard gameState.phase != .paused else { return }
         movePaddle(to: event.location(in: self).x)
     }
 
     override func mouseDown(with event: NSEvent) {
-        let location = event.location(in: self)
-        let onPauseButton = nodes(at: location).contains { $0.name == "pauseButton" }
-        let intent = touchIntent(hitsPauseButton: onPauseButton, phase: gameState.phase)
-
-        switch intent {
-        case .none:
-            break
-        case .pause:
-            gameState = gameState.pause()
-            applyPauseState()
-        case .resume:
-            gameState = gameState.resume()
-            applyPauseState()
-        case .movePaddle:
-            movePaddle(to: location.x)
-        case .launchAndMovePaddle:
-            gameState = gameState.launch()
-            gameCamera.updateHUD(lives: gameState.lives, score: gameState.score)
-            movePaddle(to: location.x)
-            SceneEffects.spawnLaunchRipple(at: ball.position).forEach(addChild)
-            ball.physicsBody?.velocity = Theme.Layout.ballLaunchVelocity
-        }
+        let loc = event.location(in: self)
+        handle(inputCoordinator.action(
+            at: loc,
+            hittingPauseButton: nodes(at: loc).contains { $0.name == "pauseButton" },
+            phase: gameState.phase
+        ))
     }
     #endif
 
