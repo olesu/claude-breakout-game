@@ -141,7 +141,7 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
             gameState = gameState.launch()
             gameCamera.updateHUD(lives: gameState.lives, score: gameState.score)
             movePaddle(to: touches)
-            spawnLaunchRipple(at: ball.position)
+            SceneEffects.spawnLaunchRipple(at: ball.position).forEach(addChild)
             ball.physicsBody?.velocity = Theme.Layout.ballLaunchVelocity
         }
     }
@@ -196,7 +196,7 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
             gameState = gameState.launch()
             gameCamera.updateHUD(lives: gameState.lives, score: gameState.score)
             movePaddle(to: location.x)
-            spawnLaunchRipple(at: ball.position)
+            SceneEffects.spawnLaunchRipple(at: ball.position).forEach(addChild)
             ball.physicsBody?.velocity = Theme.Layout.ballLaunchVelocity
         }
     }
@@ -212,11 +212,15 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
             ?? (contact.bodyB.node as? PowerUpNode) {
             switch powerUp.collect(node) {
             case .activated(let type):
-                spawnPowerUpActivationEffect(for: type)
+                SceneEffects.spawnPowerUpActivationEffect(
+                    for: type, ballPosition: ball.position, paddlePosition: paddle.position
+                ).forEach(addChild)
             case .instant(.extraLife):
                 gameState = gameState.addLife()
                 gameCamera.updateHUD(lives: gameState.lives, score: gameState.score)
-                spawnPowerUpActivationEffect(for: .extraLife)
+                SceneEffects.spawnPowerUpActivationEffect(
+                    for: .extraLife, ballPosition: ball.position, paddlePosition: paddle.position
+                ).forEach(addChild)
             case .instant:
                 break  // New instant types need explicit handling above this line.
             case .none:
@@ -278,7 +282,9 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
         // Visual side-effects
         gameCamera.shake()
         gameCamera.updateHUD(lives: gameState.lives, score: gameState.score)
-        spawnBallLossFlash()
+        SceneEffects.spawnBallLossFlash(
+            sceneSize: size, center: CGPoint(x: frame.midX, y: frame.midY)
+        ).forEach(addChild)
 
         // Scene transition (happens last)
         if isGameOver {
@@ -352,79 +358,12 @@ private extension GameScene {
         gameCamera.updateHUD(lives: gameState.lives, score: gameState.score)
 
         // Visual side-effects
-        spawnScorePopup(at: contactPoint, points: points)
-        spawnSparks(at: contactPoint, color: color)
+        SceneEffects.spawnScorePopup(at: contactPoint, points: points).forEach(addChild)
+        SceneEffects.spawnSparks(at: contactPoint, color: color).forEach(addChild)
         brick.destroy { [weak self] in
             guard let self else { return }
             if bricks.isEmpty && !levelComplete { levelComplete = true }
         }
         if spawnPowerUp { powerUp.spawnIfEligible(at: brick.position) }
-    }
-}
-
-// MARK: - Visual effects
-
-private extension GameScene {
-    func spawnScorePopup(at position: CGPoint, points: Int) {
-        let popup = ScorePopupNode(points: points)
-        popup.position = position
-        addChild(popup)
-    }
-
-    func spawnSparks(at position: CGPoint, color: PlatformColor) {
-        let sparks = BrickSparkNode(color: color)
-        sparks.position = position
-        addChild(sparks)
-    }
-
-    func spawnLaunchRipple(at position: CGPoint) {
-        spawnRippleRing(at: position, delay: 0, scale: 4.0, alpha: 1.0, lineWidth: 2.0)
-        spawnRippleRing(at: position, delay: 0.12, scale: 5.0, alpha: 0.6, lineWidth: 1.5)
-    }
-
-    func spawnPowerUpActivationEffect(for type: PowerUpType) {
-        switch type {
-        case .powerBall:
-            spawnRippleRing(at: ball.position, delay: 0, scale: 6.0, alpha: 1.0, lineWidth: 2.5)
-            spawnRippleRing(at: ball.position, delay: 0.1, scale: 8.0, alpha: 0.5, lineWidth: 1.5)
-        case .widePaddle:
-            spawnRippleRing(at: paddle.position, delay: 0, scale: 5.0, alpha: 1.0, lineWidth: 2.0)
-            spawnRippleRing(at: paddle.position, delay: 0.1, scale: 7.0, alpha: 0.5, lineWidth: 1.5)
-        case .slowBall:
-            spawnRippleRing(at: ball.position, delay: 0, scale: 5.0, alpha: 1.0, lineWidth: 2.0)
-            spawnRippleRing(at: ball.position, delay: 0.1, scale: 7.0, alpha: 0.5, lineWidth: 1.5)
-        case .extraLife:
-            spawnRippleRing(at: ball.position, delay: 0, scale: 4.0, alpha: 1.0, lineWidth: 2.5)
-            spawnRippleRing(at: ball.position, delay: 0.08, scale: 6.0, alpha: 0.6, lineWidth: 1.5)
-            spawnRippleRing(at: ball.position, delay: 0.16, scale: 8.0, alpha: 0.3, lineWidth: 1.0)
-        }
-    }
-
-    func spawnBallLossFlash() {
-        let flash = SKSpriteNode(color: Theme.Color.danger, size: size)
-        flash.position = CGPoint(x: frame.midX, y: frame.midY)
-        flash.alpha = 0
-        flash.zPosition = 20
-        addChild(flash)
-        flash.run(.sequence([
-            .fadeAlpha(to: 0.35, duration: 0.05),
-            .fadeOut(withDuration: 0.30),
-            .removeFromParent()
-        ]))
-    }
-
-    func spawnRippleRing(
-        at position: CGPoint,
-        delay: TimeInterval,
-        scale: CGFloat,
-        alpha: CGFloat,
-        lineWidth: CGFloat
-    ) {
-        let ring = RingNode(
-            radius: Theme.Layout.ballRadius, delay: delay,
-            scale: scale, alpha: alpha, lineWidth: lineWidth
-        )
-        ring.position = position
-        addChild(ring)
     }
 }
