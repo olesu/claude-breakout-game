@@ -150,24 +150,6 @@ decrements `hits`; the brick is removed only when `hits` reaches zero (or
 never, if indestructible). Sprite appearance updates on each hit to reflect
 damage state.
 
----
-
-### macOS Support
-
-SpriteKit and all game logic are platform-agnostic. The main work to support a
-native macOS version with full-screen and trackpad controls:
-
-- **App entry point** — add a macOS `AppDelegate` using `NSApplication`/`NSWindow`,
-  guarded with `#if os(macOS)`.
-- **Input** — replace `touchesBegan`/`touchesMoved` in `GameScene` with
-  `mouseDown`/`mouseMoved` (or `NSEvent` scroll events for trackpad swipe feel).
-  All input already funnels through a single `movePaddle(to x:)` call, so the
-  surface area is small.
-- **Safe area** — `safeAreaInsets` is UIKit-only; the HUD top-offset needs a
-  `#if os(iOS)` guard.
-- **XcodeGen** — add a second macOS application target in `project.yml`.
-
-Mac Catalyst is a faster path (hours vs. a weekend) but feels less native.
 
 ---
 
