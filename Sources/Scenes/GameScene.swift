@@ -7,7 +7,7 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
     private let levelIndex: Int
     private let level: Level
     private var gameState: GameState
-    private var gameCamera: GameCameraNode!
+    private var gameCamera: GameCameraNode { camera as! GameCameraNode }
     private var paddle: PaddleNode!
     private var ball: BallNode!
     private var bricks: [BrickNode] = []
@@ -50,7 +50,6 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
         )
         addChild(cam)
         camera = cam
-        gameCamera = cam
         gameCamera.updateHUD(lives: gameState.lives, score: gameState.score)
         backgroundColor = .black
         physicsWorld.gravity = .zero
