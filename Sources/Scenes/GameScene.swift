@@ -213,6 +213,9 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
             || contact.bodyB.categoryBitMask == PhysicsCategory.paddle {
             paddle.squash()
             reflectBallOffPaddle(contactPoint: contact.contactPoint)
+        } else if let wall = (contact.bodyA.node as? WallNode)
+            ?? (contact.bodyB.node as? WallNode) {
+            wall.flash()
         }
     }
 
