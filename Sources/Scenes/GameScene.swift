@@ -166,6 +166,15 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
             phase: gameState.phase
         ))
     }
+
+    override func keyDown(with event: NSEvent) {
+        guard event.characters?.lowercased() == "p" else { return }
+        switch gameState.phase {
+        case .playing: handle(.pause)
+        case .paused:  handle(.resume)
+        default:       break
+        }
+    }
     #endif
 
     // MARK: - Physics contact
