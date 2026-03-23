@@ -7,6 +7,7 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
     private let levelIndex: Int
     private let level: Level
     private var gameState: GameState
+    // swiftlint:disable:next force_cast
     private var gameCamera: GameCameraNode { camera as! GameCameraNode }
     private var paddle: PaddleNode!
     private var ball: BallNode!
@@ -17,7 +18,7 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
     private let savedBrickGrid: [[Bool]]?
     private let inputCoordinator = InputCoordinator()
     #if os(macOS)
-    private var trackingArea: NSTrackingArea?
+    private let mouseTracker = MouseInputTracker()
     #endif
 
     init(
@@ -40,35 +41,38 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
     // MARK: - Setup
 
     override func didMove(to view: SKView) {
+        setupCamera(in: view)
+        configurePhysics()
+        setupBackground()
+        setupNodes()
+        #if os(macOS)
+        mouseTracker.install(on: view)
+        #endif
+    }
+
+    private func setupCamera(in view: SKView) {
         #if os(iOS)
         let topSafeArea = view.safeAreaInsets.top
         #else
         let topSafeArea: CGFloat = 28  // clears the auto-hiding macOS menu bar in fullscreen
         #endif
-        let cam = GameCameraNode(
-            sceneSize: size, levelName: level.name, topSafeArea: topSafeArea
-        )
+        let cam = GameCameraNode(sceneSize: size, levelName: level.name, topSafeArea: topSafeArea)
         addChild(cam)
         camera = cam
-        gameCamera.updateHUD(lives: gameState.lives, score: gameState.score)
-        backgroundColor = .black
+        cam.updateHUD(lives: gameState.lives, score: gameState.score)
+    }
+
+    private func configurePhysics() {
         physicsWorld.gravity = .zero
         physicsWorld.contactDelegate = self
+    }
+
+    private func setupBackground() {
+        backgroundColor = .black
         makeWallNodes(for: frame).forEach { addChild($0) }
         let starfield = AmbientStarfieldNode(sceneSize: size)
         starfield.position = CGPoint(x: frame.midX, y: frame.maxY)
         addChild(starfield)
-        setupNodes()
-        #if os(macOS)
-        let ta = NSTrackingArea(
-            rect: .zero,
-            options: [.mouseMoved, .activeInKeyWindow, .inVisibleRect],
-            owner: view,
-            userInfo: nil
-        )
-        view.addTrackingArea(ta)
-        trackingArea = ta
-        #endif
     }
 
     private func setupNodes() {
@@ -233,7 +237,7 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
 
     override func willMove(from view: SKView) {
         #if os(macOS)
-        if let ta = trackingArea { view.removeTrackingArea(ta) }
+        mouseTracker.uninstall(from: view)
         #endif
         // Skip if already saved by applyPauseState(), or if game has ended / level is advancing.
         guard !gameLoop.levelComplete
