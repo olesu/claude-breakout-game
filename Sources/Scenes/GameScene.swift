@@ -136,6 +136,14 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
 
     #if os(iOS)
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
+        if touches.count == 2 {
+            switch gameState.phase {
+            case .playing: handle(.pause)
+            case .paused:  handle(.resume)
+            default:       break
+            }
+            return
+        }
         guard let touch = touches.first else { return }
         let loc = touch.location(in: self)
         handle(inputCoordinator.action(
