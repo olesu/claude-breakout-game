@@ -67,7 +67,6 @@ final class BallNode: SKNode {
         physicsBody?.collisionBitMask = PhysicsCategory.wall | PhysicsCategory.paddle
         shape.fillColor = Theme.Color.powerUp
         bloom.filter?.setValue(16.0, forKey: "inputRadius")
-        bloom.shouldRasterize = true
         trail.activate(color: Theme.Color.powerUp)
     }
 
@@ -99,7 +98,6 @@ final class BallNode: SKNode {
             PhysicsCategory.wall | PhysicsCategory.paddle | PhysicsCategory.brick
         shape.fillColor = Theme.Color.primary
         bloom.filter?.setValue(8.0, forKey: "inputRadius")
-        bloom.shouldRasterize = true
         trail.deactivate()
     }
 
