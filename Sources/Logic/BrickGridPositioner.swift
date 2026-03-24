@@ -18,6 +18,18 @@ func brickGridOrigin(sceneMinX: CGFloat, sceneMaxY: CGFloat, margin: CGFloat) ->
     CGPoint(x: sceneMinX + margin, y: sceneMaxY - Theme.Layout.brickTopMargin)
 }
 
+func brickGrid(from bricks: [BrickNode], level: Level) -> [[Bool]] {
+    precondition(!level.grid.isEmpty, "Level grid must not be empty")
+    var grid = Array(
+        repeating: Array(repeating: false, count: level.grid[0].count),
+        count: level.grid.count
+    )
+    for brick in bricks {
+        grid[brick.row][brick.col] = true
+    }
+    return grid
+}
+
 func makeBrickNodes(
     for level: Level,
     sceneFrame: CGRect,

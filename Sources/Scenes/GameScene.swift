@@ -247,18 +247,11 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
     }
 
     private func saveGame() {
-        var grid = Array(
-            repeating: Array(repeating: false, count: level.grid[0].count),
-            count: level.grid.count
-        )
-        for brick in bricks {
-            grid[brick.row][brick.col] = true
-        }
         saveStore.save(SavedGame(
             levelIndex: levelIndex,
             score: gameState.score,
             lives: gameState.lives,
-            brickGrid: grid
+            brickGrid: brickGrid(from: bricks, level: level)
         ))
     }
 

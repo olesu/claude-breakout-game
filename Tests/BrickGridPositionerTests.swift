@@ -59,6 +59,38 @@ struct BrickGridPositionerTests {
         #expect(isClose(pos.y, 394))
     }
 
+    // brickGrid(from:level:) tests
+
+    @Test func brickGridAllBricksPresent() {
+        let level = Level(name: "T", grid: [[true, true], [true, true]])
+        let brickSize = CGSize(width: 10, height: 10)
+        let bricks = [
+            BrickNode(size: brickSize, row: 0, col: 0),
+            BrickNode(size: brickSize, row: 0, col: 1),
+            BrickNode(size: brickSize, row: 1, col: 0),
+            BrickNode(size: brickSize, row: 1, col: 1)
+        ]
+        let grid = brickGrid(from: bricks, level: level)
+        #expect(grid == [[true, true], [true, true]])
+    }
+
+    @Test func brickGridNoBricks() {
+        let level = Level(name: "T", grid: [[true, true], [true, true]])
+        let grid = brickGrid(from: [], level: level)
+        #expect(grid == [[false, false], [false, false]])
+    }
+
+    @Test func brickGridSparsePattern() {
+        let level = Level(name: "T", grid: [[true, true], [true, true]])
+        let brickSize = CGSize(width: 10, height: 10)
+        let bricks = [
+            BrickNode(size: brickSize, row: 0, col: 1),
+            BrickNode(size: brickSize, row: 1, col: 0)
+        ]
+        let grid = brickGrid(from: bricks, level: level)
+        #expect(grid == [[false, true], [true, false]])
+    }
+
     // brickGridOrigin tests
 
     @Test func brickGridOriginX() {
