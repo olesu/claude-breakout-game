@@ -14,7 +14,7 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
     private var bricks: [BrickNode] = []
     private var powerUp: PowerUpCoordinator!
     private var gameLoop: GameLoopCoordinator!
-    private let saveStore = GameSaveStore()
+    private let persistence = GamePersistenceCoordinator()
     private let savedBrickGrid: [[Bool]]?
     private let inputCoordinator = InputCoordinator()
     #if os(macOS)
@@ -229,7 +229,7 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
         physicsWorld.speed = isPaused ? 0 : 1
         gameCamera.setPaused(isPaused)
         if isPaused {
-            saveGame()
+            persistence.gamePaused(snapshot: makeSnapshot)
         } else {
             gameLoop.resetLastUpdateTime()
         }
@@ -239,20 +239,20 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
         #if os(macOS)
         mouseTracker.uninstall(from: view)
         #endif
-        // Skip if already saved by applyPauseState(), or if game has ended / level is advancing.
-        guard !gameLoop.levelComplete
-            && gameState.phase != .gameOver
-            && gameState.phase != .paused else { return }
-        saveGame()
+        persistence.sceneWillDisappear(
+            isLevelComplete: gameLoop.levelComplete,
+            phase: gameState.phase,
+            snapshot: makeSnapshot
+        )
     }
 
-    private func saveGame() {
-        saveStore.save(SavedGame(
+    private func makeSnapshot() -> SavedGame {
+        SavedGame(
             levelIndex: levelIndex,
             score: gameState.score,
             lives: gameState.lives,
             brickGrid: brickGrid(from: bricks, level: level)
-        ))
+        )
     }
 
     private func handleBallLoss() {
@@ -270,7 +270,7 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
 
         // Scene transition (happens last)
         if isGameOver {
-            saveStore.clear()
+            persistence.gameOver()
             present(GameSummaryScene(size: size, outcome: .gameOver, score: gameState.score))
         }
     }
@@ -281,7 +281,7 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
             gameState = gameState.resetForNextLevel()
             present(GameScene(size: size, levelIndex: nextIndex, gameState: gameState))
         } else {
-            saveStore.clear()
+            persistence.levelVictory()
             present(GameSummaryScene(size: size, outcome: .victory, score: gameState.score))
         }
     }
