@@ -125,7 +125,7 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
             gameCamera.updateHUD(lives: gameState.lives, score: gameState.score)
             movePaddle(to: x)
             SceneEffects.spawnLaunchRipple(at: ball.position).forEach(addChild)
-            ball.physicsBody?.velocity = Theme.Layout.ballLaunchVelocity
+            ball.launch()
         }
     }
 

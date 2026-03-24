@@ -55,6 +55,13 @@ final class BallNode: SKNode {
         trail.targetNode = scene
     }
 
+    /// Sets the ball's initial velocity to begin a new serve.
+    /// Call only after the ball has been added to the scene.
+    func launch() {
+        assert(physicsBody != nil, "BallNode.launch() called with no physics body")
+        physicsBody!.velocity = Theme.Layout.ballLaunchVelocity // safe: set unconditionally in init
+    }
+
     func activatePowerBall() {
         isPowerBall = true
         physicsBody?.collisionBitMask = PhysicsCategory.wall | PhysicsCategory.paddle
