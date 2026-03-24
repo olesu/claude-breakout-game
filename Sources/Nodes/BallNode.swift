@@ -82,11 +82,7 @@ final class BallNode: SKNode {
 
     func deactivateSlowBall() {
         guard let body = physicsBody, let savedSpeed = speedBeforeSlowBall else { return }
-        let currentSpeed = hypot(body.velocity.dx, body.velocity.dy)
-        if currentSpeed > 0 {
-            let scale = savedSpeed / currentSpeed
-            body.velocity = CGVector(dx: body.velocity.dx * scale, dy: body.velocity.dy * scale)
-        }
+        body.velocity = restoredVelocity(current: body.velocity, savedSpeed: savedSpeed)
         speedBeforeSlowBall = nil
         shape.fillColor = isPowerBall ? Theme.Color.powerUp : Theme.Color.primary
         trail.activate(color: isPowerBall ? Theme.Color.powerUp : Theme.Color.primary)
