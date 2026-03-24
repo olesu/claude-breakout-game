@@ -1,5 +1,6 @@
 # XcodeGen — generated project files
 *.xcodeproj/
+Package.swift
 *.xcworkspace/
 .xcodegen/
 
