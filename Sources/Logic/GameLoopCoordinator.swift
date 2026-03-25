@@ -1,7 +1,7 @@
 import SpriteKit
 
 final class GameLoopCoordinator {
-    private var balls: [BallNode]
+    private let balls: [BallNode]
     private let paddle: PaddleNode
     private let powerUp: PowerUpCoordinator
 
@@ -14,10 +14,6 @@ final class GameLoopCoordinator {
         self.powerUp = powerUp
     }
 
-    func updateBalls(_ newBalls: [BallNode]) {
-        balls = newBalls
-    }
-
     func markLevelComplete() {
         levelComplete = true
     }
@@ -26,7 +22,7 @@ final class GameLoopCoordinator {
         let delta = frameDelta(last: lastUpdateTime, current: currentTime)
         lastUpdateTime = currentTime
 
-        let ballsAllLost = balls.allSatisfy { $0.position.y <= floorY }
+        let ballsAllLost = !balls.isEmpty && balls.allSatisfy { $0.position.y <= floorY }
         let action = frameAction(
             phase: phase,
             ballsAllLost: ballsAllLost,
@@ -37,7 +33,7 @@ final class GameLoopCoordinator {
         // resetBall only triggers in .waitingToLaunch, which the speed guard excludes.
         if case .resetBall = action { resetBall() }
         enforceMinimumVerticalSpeed(phase: phase)
-        powerUp.update(delta: delta)
+        powerUp.update(delta: delta, floorY: floorY)
 
         return action
     }

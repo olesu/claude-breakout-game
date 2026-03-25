@@ -93,7 +93,7 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
         bricks = makeBrickNodes(for: level, sceneFrame: frame, savedGrid: savedBrickGrid)
         bricks.forEach { addChild($0) }
 
-        powerUp = PowerUpCoordinator(scene: self, balls: balls, paddle: paddle)
+        powerUp = PowerUpCoordinator(balls: balls, paddle: paddle)
         gameLoop = GameLoopCoordinator(balls: balls, paddle: paddle, powerUp: powerUp)
     }
 
@@ -332,6 +332,6 @@ private extension GameScene {
             guard let self else { return }
             if bricks.isEmpty && !gameLoop.levelComplete { gameLoop.markLevelComplete() }
         }
-        if spawnPowerUp { powerUp.spawnIfEligible(at: brick.position) }
+        if spawnPowerUp, let node = powerUp.spawnIfEligible(at: brick.position) { addChild(node) }
     }
 }

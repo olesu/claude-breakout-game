@@ -7,33 +7,32 @@ enum CollectResult {
 }
 
 final class PowerUpCoordinator {
-    private weak var scene: SKScene?
-    private var balls: [BallNode]
-    private weak var paddle: PaddleNode?
+    private let balls: [BallNode]
+    private let paddle: PaddleNode
     private var nodes: [PowerUpNode] = []
     private var state = PowerUpState()
+    private let dropProbability: Double
 
     var isPowerBallActive: Bool { state.active == .powerBall }
 
-    init(scene: SKScene, balls: [BallNode], paddle: PaddleNode) {
-        self.scene = scene
+    init(
+        balls: [BallNode],
+        paddle: PaddleNode,
+        dropProbability: Double = Theme.Layout.powerUpDropProbability
+    ) {
         self.balls = balls
         self.paddle = paddle
+        self.dropProbability = dropProbability
     }
 
-    func updateBalls(_ newBalls: [BallNode]) {
-        balls = newBalls
-    }
-
-    func update(delta: TimeInterval) {
+    func update(delta: TimeInterval, floorY: CGFloat) {
         let before = state
         state = state.tick(delta: delta)
         if before.isActive && !state.isActive, let type = before.active {
             removeEffect(for: type)
         }
-        guard let scene else { return }
         nodes = nodes.filter { node in
-            if node.position.y < scene.frame.minY - 20 {
+            if node.position.y < floorY - 20 {
                 node.removeFromParent()
                 return false
             }
@@ -41,17 +40,17 @@ final class PowerUpCoordinator {
         }
     }
 
-    func spawnIfEligible(at position: CGPoint) {
+    func spawnIfEligible(at position: CGPoint) -> PowerUpNode? {
         guard !state.isActive,
-              Double.random(in: 0..<1) < Theme.Layout.powerUpDropProbability,
-              let scene else { return }
+              Double.random(in: 0..<1) < dropProbability else { return nil }
         // Safe: allCases is always non-empty for a non-empty enum.
         let type = PowerUpType.allCases.randomElement()!
         let node = PowerUpNode(type: type)
         node.position = position
-        scene.addChild(node)
-        node.physicsBody?.velocity = CGVector(dx: 0, dy: -Theme.Layout.powerUpFallSpeed)
+        // Safe: PowerUpNode.init unconditionally assigns physicsBody.
+        node.physicsBody!.velocity = CGVector(dx: 0, dy: -Theme.Layout.powerUpFallSpeed)
         nodes.append(node)
+        return node
     }
 
     @discardableResult
@@ -87,7 +86,7 @@ final class PowerUpCoordinator {
     private func applyEffect(for type: PowerUpType) {
         switch type {
         case .powerBall: balls.forEach { $0.activatePowerBall() }
-        case .widePaddle: paddle?.activateWidePaddle()
+        case .widePaddle: paddle.activateWidePaddle()
         case .slowBall: balls.forEach { $0.activateSlowBall() }
         case .extraLife: break  // instant effect; handled by caller via CollectResult
         case .multiBall: break  // activation handled separately via CollectResult
@@ -97,7 +96,7 @@ final class PowerUpCoordinator {
     private func removeEffect(for type: PowerUpType) {
         switch type {
         case .powerBall: balls.forEach { $0.deactivatePowerBall() }
-        case .widePaddle: paddle?.deactivateWidePaddle()
+        case .widePaddle: paddle.deactivateWidePaddle()
         case .slowBall: balls.forEach { $0.deactivateSlowBall() }
         case .extraLife: break  // no ongoing effect to remove
         case .multiBall: break  // ended when all extra balls are lost
