@@ -10,7 +10,7 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
     // swiftlint:disable:next force_cast
     private var gameCamera: GameCameraNode { camera as! GameCameraNode }
     private var paddle: PaddleNode!
-    private var ball: BallNode!
+    private var balls: [BallNode] = []
     private var bricks: [BrickNode] = []
     private var powerUp: PowerUpCoordinator!
     private var gameLoop: GameLoopCoordinator!
@@ -80,20 +80,21 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
         paddle.position = CGPoint(x: frame.midX, y: frame.minY + Theme.Layout.paddleOffsetY)
         addChild(paddle)
 
-        ball = BallNode(radius: Theme.Layout.ballRadius)
-        ball.position = ballRestingPosition(
+        let primaryBall = BallNode(radius: Theme.Layout.ballRadius)
+        primaryBall.position = ballRestingPosition(
             paddlePosition: paddle.position,
             paddleHalfHeight: paddle.size.height / 2,
             ballRadius: Theme.Layout.ballRadius
         )
-        addChild(ball)
-        ball.attachTrail(to: self)
+        addChild(primaryBall)
+        primaryBall.attachTrail(to: self)
+        balls = [primaryBall]
 
         bricks = makeBrickNodes(for: level, sceneFrame: frame, savedGrid: savedBrickGrid)
         bricks.forEach { addChild($0) }
 
-        powerUp = PowerUpCoordinator(scene: self, ball: ball, paddle: paddle)
-        gameLoop = GameLoopCoordinator(ball: ball, paddle: paddle, powerUp: powerUp)
+        powerUp = PowerUpCoordinator(scene: self, balls: balls, paddle: paddle)
+        gameLoop = GameLoopCoordinator(balls: balls, paddle: paddle, powerUp: powerUp)
     }
 
     // MARK: - Game loop
@@ -121,11 +122,12 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
         case .movePaddle(let x):
             movePaddle(to: x)
         case .launchAndMovePaddle(let x):
+            guard let primary = balls.first else { return }
             gameState = gameState.launch()
             gameCamera.updateHUD(lives: gameState.lives, score: gameState.score)
             movePaddle(to: x)
-            SceneEffects.spawnLaunchRipple(at: ball.position).forEach(addChild)
-            ball.launch()
+            SceneEffects.spawnLaunchRipple(at: primary.position).forEach(addChild)
+            primary.launch()
         }
     }
 
@@ -198,14 +200,18 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
             ?? (contact.bodyB.node as? PowerUpNode) {
             switch powerUp.collect(node) {
             case .activated(let type):
+                let ballPos = balls.first?.position ?? paddle.position
                 SceneEffects.spawnPowerUpActivationEffect(
-                    for: type, ballPosition: ball.position, paddlePosition: paddle.position
+                    for: type, ballPosition: ballPos, paddlePosition: paddle.position
                 ).forEach(addChild)
             case .instant(.extraLife):
                 gameState = gameState.addLife()
                 gameCamera.updateHUD(lives: gameState.lives, score: gameState.score)
+                let ballPos = balls.first?.position ?? paddle.position
                 SceneEffects.spawnPowerUpActivationEffect(
-                    for: .extraLife, ballPosition: ball.position, paddlePosition: paddle.position
+                    for: .extraLife,
+                    ballPosition: ballPos,
+                    paddlePosition: paddle.position
                 ).forEach(addChild)
             case .instant:
                 break  // New instant types need explicit handling above this line.
@@ -215,7 +221,9 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
         } else if contact.bodyA.categoryBitMask == PhysicsCategory.paddle
             || contact.bodyB.categoryBitMask == PhysicsCategory.paddle {
             paddle.squash()
-            reflectBallOffPaddle(contactPoint: contact.contactPoint)
+            if let ball = (contact.bodyA.node as? BallNode) ?? (contact.bodyB.node as? BallNode) {
+                reflectBallOffPaddle(contactPoint: contact.contactPoint, ball: ball)
+            }
         } else if let wall = (contact.bodyA.node as? WallNode)
             ?? (contact.bodyB.node as? WallNode) {
             wall.flash()
@@ -293,7 +301,7 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
 private extension GameScene {
     /// Overrides ball velocity based on where it hit the paddle.
     /// Ignores sub-paddle contacts (physics glitch guard).
-    func reflectBallOffPaddle(contactPoint: CGPoint) {
+    func reflectBallOffPaddle(contactPoint: CGPoint, ball: BallNode) {
         guard contactPoint.y >= paddle.position.y, let body = ball.physicsBody else { return }
         let speed = hypot(body.velocity.dx, body.velocity.dy)
         let halfWidth = paddle.size.width * paddle.xScale / 2

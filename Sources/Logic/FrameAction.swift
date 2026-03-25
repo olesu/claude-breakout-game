@@ -9,13 +9,12 @@ enum FrameAction {
 
 func frameAction(
     phase: GamePhase,
-    ballY: CGFloat,
-    floorY: CGFloat,
+    ballsAllLost: Bool,
     levelComplete: Bool
 ) -> FrameAction {
     guard phase != .paused, phase != .gameOver else { return .nothing }
     if levelComplete { return .advanceLevel }
     if phase == .waitingToLaunch { return .resetBall }
-    if phase == .playing && ballY <= floorY { return .handleBallLoss }
+    if phase == .playing && ballsAllLost { return .handleBallLoss }
     return .nothing
 }

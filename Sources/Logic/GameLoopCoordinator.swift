@@ -1,17 +1,21 @@
 import SpriteKit
 
 final class GameLoopCoordinator {
-    private let ball: BallNode
+    private var balls: [BallNode]
     private let paddle: PaddleNode
     private let powerUp: PowerUpCoordinator
 
     private var lastUpdateTime: TimeInterval = 0
     private(set) var levelComplete = false
 
-    init(ball: BallNode, paddle: PaddleNode, powerUp: PowerUpCoordinator) {
-        self.ball = ball
+    init(balls: [BallNode], paddle: PaddleNode, powerUp: PowerUpCoordinator) {
+        self.balls = balls
         self.paddle = paddle
         self.powerUp = powerUp
+    }
+
+    func updateBalls(_ newBalls: [BallNode]) {
+        balls = newBalls
     }
 
     func markLevelComplete() {
@@ -22,10 +26,10 @@ final class GameLoopCoordinator {
         let delta = frameDelta(last: lastUpdateTime, current: currentTime)
         lastUpdateTime = currentTime
 
+        let ballsAllLost = balls.allSatisfy { $0.position.y <= floorY }
         let action = frameAction(
             phase: phase,
-            ballY: ball.position.y,
-            floorY: floorY,
+            ballsAllLost: ballsAllLost,
             levelComplete: levelComplete
         )
 
@@ -43,8 +47,9 @@ final class GameLoopCoordinator {
     }
 
     private func resetBall() {
-        ball.physicsBody?.velocity = .zero
-        ball.position = ballRestingPosition(
+        guard let primary = balls.first else { return }
+        primary.physicsBody?.velocity = .zero
+        primary.position = ballRestingPosition(
             paddlePosition: paddle.position,
             paddleHalfHeight: paddle.size.height / 2,
             ballRadius: Theme.Layout.ballRadius
@@ -52,10 +57,13 @@ final class GameLoopCoordinator {
     }
 
     private func enforceMinimumVerticalSpeed(phase: GamePhase) {
-        guard phase == .playing, let body = ball.physicsBody else { return }
-        body.velocity = clampedVerticalVelocity(
-            velocity: body.velocity,
-            minVerticalRatio: Theme.Layout.ballMinVerticalRatio
-        )
+        guard phase == .playing else { return }
+        for ball in balls {
+            guard let body = ball.physicsBody else { continue }
+            body.velocity = clampedVerticalVelocity(
+                velocity: body.velocity,
+                minVerticalRatio: Theme.Layout.ballMinVerticalRatio
+            )
+        }
     }
 }

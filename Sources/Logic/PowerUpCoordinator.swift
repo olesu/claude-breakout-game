@@ -8,17 +8,21 @@ enum CollectResult {
 
 final class PowerUpCoordinator {
     private weak var scene: SKScene?
-    private weak var ball: BallNode?
+    private var balls: [BallNode]
     private weak var paddle: PaddleNode?
     private var nodes: [PowerUpNode] = []
     private var state = PowerUpState()
 
     var isPowerBallActive: Bool { state.active == .powerBall }
 
-    init(scene: SKScene, ball: BallNode, paddle: PaddleNode) {
+    init(scene: SKScene, balls: [BallNode], paddle: PaddleNode) {
         self.scene = scene
-        self.ball = ball
+        self.balls = balls
         self.paddle = paddle
+    }
+
+    func updateBalls(_ newBalls: [BallNode]) {
+        balls = newBalls
     }
 
     func update(delta: TimeInterval) {
@@ -82,9 +86,9 @@ final class PowerUpCoordinator {
 
     private func applyEffect(for type: PowerUpType) {
         switch type {
-        case .powerBall: ball?.activatePowerBall()
+        case .powerBall: balls.forEach { $0.activatePowerBall() }
         case .widePaddle: paddle?.activateWidePaddle()
-        case .slowBall: ball?.activateSlowBall()
+        case .slowBall: balls.forEach { $0.activateSlowBall() }
         case .extraLife: break  // instant effect; handled by caller via CollectResult
         case .multiBall: break  // activation handled separately via CollectResult
         }
@@ -92,9 +96,9 @@ final class PowerUpCoordinator {
 
     private func removeEffect(for type: PowerUpType) {
         switch type {
-        case .powerBall: ball?.deactivatePowerBall()
+        case .powerBall: balls.forEach { $0.deactivatePowerBall() }
         case .widePaddle: paddle?.deactivateWidePaddle()
-        case .slowBall: ball?.deactivateSlowBall()
+        case .slowBall: balls.forEach { $0.deactivateSlowBall() }
         case .extraLife: break  // no ongoing effect to remove
         case .multiBall: break  // ended when all extra balls are lost
         }
