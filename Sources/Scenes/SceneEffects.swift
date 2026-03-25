@@ -47,6 +47,11 @@ enum SceneEffects {
                 rippleRing(at: ballPosition, delay: 0.08, scale: 6.0, alpha: 0.6, lineWidth: 1.5),
                 rippleRing(at: ballPosition, delay: 0.16, scale: 8.0, alpha: 0.3, lineWidth: 1.0)
             ]
+        case .multiBall:
+            return [
+                rippleRing(at: ballPosition, delay: 0, scale: 5.0, alpha: 1.0, lineWidth: 2.0),
+                rippleRing(at: ballPosition, delay: 0.1, scale: 7.0, alpha: 0.5, lineWidth: 1.5)
+            ]
         }
     }
 

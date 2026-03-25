@@ -86,6 +86,7 @@ final class PowerUpCoordinator {
         case .widePaddle: paddle?.activateWidePaddle()
         case .slowBall: ball?.activateSlowBall()
         case .extraLife: break  // instant effect; handled by caller via CollectResult
+        case .multiBall: break  // activation handled separately via CollectResult
         }
     }
 
@@ -95,6 +96,7 @@ final class PowerUpCoordinator {
         case .widePaddle: paddle?.deactivateWidePaddle()
         case .slowBall: ball?.deactivateSlowBall()
         case .extraLife: break  // no ongoing effect to remove
+        case .multiBall: break  // ended when all extra balls are lost
         }
     }
 }

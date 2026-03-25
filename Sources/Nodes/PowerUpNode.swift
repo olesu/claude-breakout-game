@@ -62,6 +62,7 @@ private extension PowerUpType {
         case .widePaddle: return Theme.Color.widePaddle
         case .slowBall: return Theme.Color.slowBall
         case .extraLife: return Theme.Color.extraLife
+        case .multiBall: return Theme.Color.powerUp
         }
     }
 }
