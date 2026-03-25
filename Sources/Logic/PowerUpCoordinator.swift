@@ -7,7 +7,7 @@ enum CollectResult {
 }
 
 final class PowerUpCoordinator {
-    private let balls: [BallNode]
+    private var balls: [BallNode]
     private let paddle: PaddleNode
     private var nodes: [PowerUpNode] = []
     private var state = PowerUpState()
@@ -71,6 +71,19 @@ final class PowerUpCoordinator {
         return .activated(type)
     }
 
+    /// Adds `ball` to the tracked set and immediately applies any currently active timed effect.
+    func addBall(_ ball: BallNode) {
+        balls.append(ball)
+        if let type = state.active {
+            applyEffect(for: type, to: ball)
+        }
+    }
+
+    /// Removes `ball` from the tracked set (e.g. when an extra ball is silently culled).
+    func removeBall(_ ball: BallNode) {
+        balls.removeAll { $0 === ball }
+    }
+
     func clearAll() {
         if state.isActive, let type = state.active {
             state = state.clear()
@@ -85,11 +98,19 @@ final class PowerUpCoordinator {
 
     private func applyEffect(for type: PowerUpType) {
         switch type {
-        case .powerBall: balls.forEach { $0.activatePowerBall() }
+        case .powerBall: balls.forEach { applyEffect(for: type, to: $0) }
         case .widePaddle: paddle.activateWidePaddle()
-        case .slowBall: balls.forEach { $0.activateSlowBall() }
+        case .slowBall: balls.forEach { applyEffect(for: type, to: $0) }
         case .extraLife: break  // instant effect; handled by caller via CollectResult
         case .multiBall: break  // activation handled separately via CollectResult
+        }
+    }
+
+    private func applyEffect(for type: PowerUpType, to ball: BallNode) {
+        switch type {
+        case .powerBall: ball.activatePowerBall()
+        case .slowBall: ball.activateSlowBall()
+        case .widePaddle, .extraLife, .multiBall: break
         }
     }
 

@@ -165,4 +165,38 @@ struct BallDeflectorTests {
         #expect(v.dx == input.dx)
         #expect(v.dy == input.dy)
     }
+
+    // MARK: - multiBallVelocities
+
+    @Test func multiBallVelocities_zeroInput_returnsTwoZeroVectors() {
+        let (v1, v2) = multiBallVelocities(primary: .zero)
+        #expect(v1 == .zero)
+        #expect(v2 == .zero)
+    }
+
+    @Test func multiBallVelocities_preservesSpeed() {
+        let primary = CGVector(dx: 200, dy: 400)
+        let primarySpeed = hypot(primary.dx, primary.dy)
+        let (v1, v2) = multiBallVelocities(primary: primary)
+        #expect(isClose(hypot(v1.dx, v1.dy), primarySpeed))
+        #expect(isClose(hypot(v2.dx, v2.dy), primarySpeed))
+    }
+
+    @Test func multiBallVelocities_symmetricAboutPrimary() {
+        // The two output vectors should be mirror images about the primary direction.
+        let primary = CGVector(dx: 0, dy: 500)
+        let (v1, v2) = multiBallVelocities(primary: primary)
+        #expect(isClose(v1.dy, v2.dy))
+        #expect(isClose(v1.dx, -v2.dx))
+    }
+
+    @Test func multiBallVelocities_spreadAngleIsRespected() {
+        let primary = CGVector(dx: 0, dy: 500)
+        let spread: CGFloat = .pi / 6
+        let (v1, _) = multiBallVelocities(primary: primary, spread: spread)
+        // Primary points straight up (angle π/2). v1 should be at angle π/2 + π/6 = 2π/3.
+        let expectedAngle = CGFloat.pi / 2 + spread
+        let actualAngle = atan2(v1.dy, v1.dx)
+        #expect(isClose(actualAngle, expectedAngle))
+    }
 }

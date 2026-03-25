@@ -25,6 +25,21 @@ func paddleReflectedVelocity(
     return CGVector(dx: speed * sin(angle), dy: speed * cos(angle))
 }
 
+/// Returns two velocity vectors diverging symmetrically from `primary` by `±spread` radians,
+/// preserving the original speed. Used when spawning extra balls for the Multi Ball power-up.
+///
+/// - Parameters:
+///   - primary: The reference velocity vector.
+///   - spread:  Half-angle between the two output vectors, in radians (default π/6 = 30°).
+func multiBallVelocities(primary: CGVector, spread: CGFloat = .pi / 6) -> (CGVector, CGVector) {
+    let speed = hypot(primary.dx, primary.dy)
+    guard speed > 0 else { return (.zero, .zero) }
+    let angle = atan2(primary.dy, primary.dx)
+    let v1 = CGVector(dx: cos(angle + spread) * speed, dy: sin(angle + spread) * speed)
+    let v2 = CGVector(dx: cos(angle - spread) * speed, dy: sin(angle - spread) * speed)
+    return (v1, v2)
+}
+
 /// Returns a velocity vector with its vertical component raised to at least
 /// `minVerticalRatio` of the total speed. `dx` is rescaled to preserve speed.
 ///

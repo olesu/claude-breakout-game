@@ -1,15 +1,13 @@
 import SpriteKit
 
 final class GameLoopCoordinator {
-    private let balls: [BallNode]
     private let paddle: PaddleNode
     private let powerUp: PowerUpCoordinator
 
     private var lastUpdateTime: TimeInterval = 0
     private(set) var levelComplete = false
 
-    init(balls: [BallNode], paddle: PaddleNode, powerUp: PowerUpCoordinator) {
-        self.balls = balls
+    init(paddle: PaddleNode, powerUp: PowerUpCoordinator) {
         self.paddle = paddle
         self.powerUp = powerUp
     }
@@ -18,7 +16,12 @@ final class GameLoopCoordinator {
         levelComplete = true
     }
 
-    func tick(currentTime: TimeInterval, phase: GamePhase, floorY: CGFloat) -> FrameAction {
+    func tick(
+        currentTime: TimeInterval,
+        phase: GamePhase,
+        floorY: CGFloat,
+        balls: [BallNode]
+    ) -> FrameAction {
         let delta = frameDelta(last: lastUpdateTime, current: currentTime)
         lastUpdateTime = currentTime
 
@@ -31,8 +34,8 @@ final class GameLoopCoordinator {
 
         // resetBall runs before enforceMinimumVerticalSpeed. This is safe because
         // resetBall only triggers in .waitingToLaunch, which the speed guard excludes.
-        if case .resetBall = action { resetBall() }
-        enforceMinimumVerticalSpeed(phase: phase)
+        if case .resetBall = action { resetBall(primary: balls.first) }
+        enforceMinimumVerticalSpeed(phase: phase, balls: balls)
         powerUp.update(delta: delta, floorY: floorY)
 
         return action
@@ -42,8 +45,8 @@ final class GameLoopCoordinator {
         lastUpdateTime = 0
     }
 
-    private func resetBall() {
-        guard let primary = balls.first else { return }
+    private func resetBall(primary: BallNode?) {
+        guard let primary else { return }
         primary.physicsBody?.velocity = .zero
         primary.position = ballRestingPosition(
             paddlePosition: paddle.position,
@@ -52,7 +55,7 @@ final class GameLoopCoordinator {
         )
     }
 
-    private func enforceMinimumVerticalSpeed(phase: GamePhase) {
+    private func enforceMinimumVerticalSpeed(phase: GamePhase, balls: [BallNode]) {
         guard phase == .playing else { return }
         for ball in balls {
             guard let body = ball.physicsBody else { continue }

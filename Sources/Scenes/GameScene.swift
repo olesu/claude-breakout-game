@@ -94,13 +94,26 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
         bricks.forEach { addChild($0) }
 
         powerUp = PowerUpCoordinator(balls: balls, paddle: paddle)
-        gameLoop = GameLoopCoordinator(balls: balls, paddle: paddle, powerUp: powerUp)
+        gameLoop = GameLoopCoordinator(paddle: paddle, powerUp: powerUp)
     }
 
     // MARK: - Game loop
 
     override func update(_ currentTime: TimeInterval) {
-        switch gameLoop.tick(currentTime: currentTime, phase: gameState.phase, floorY: frame.minY) {
+        // Silently cull extra balls (index 1+) that have fallen below the floor.
+        // balls[0] (primary) is never silently removed — its fall triggers the life-loss path.
+        while balls.count > 1,
+              let idx = balls.indices.dropFirst()
+                  .first(where: { balls[$0].position.y < frame.minY }) {
+            let fallen = balls[idx]
+            fallen.removeFromParent()
+            balls.remove(at: idx)
+            powerUp.removeBall(fallen)
+        }
+
+        switch gameLoop.tick(
+            currentTime: currentTime, phase: gameState.phase, floorY: frame.minY, balls: balls
+        ) {
         case .handleBallLoss:    handleBallLoss()
         case .advanceLevel:      advanceLevel()
         case .nothing, .resetBall: break
@@ -198,26 +211,7 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
             handleBrickContact(brick, contactPoint: contact.contactPoint)
         } else if let node = (contact.bodyA.node as? PowerUpNode)
             ?? (contact.bodyB.node as? PowerUpNode) {
-            switch powerUp.collect(node) {
-            case .activated(let type):
-                let ballPos = balls.first?.position ?? paddle.position
-                SceneEffects.spawnPowerUpActivationEffect(
-                    for: type, ballPosition: ballPos, paddlePosition: paddle.position
-                ).forEach(addChild)
-            case .instant(.extraLife):
-                gameState = gameState.addLife()
-                gameCamera.updateHUD(lives: gameState.lives, score: gameState.score)
-                let ballPos = balls.first?.position ?? paddle.position
-                SceneEffects.spawnPowerUpActivationEffect(
-                    for: .extraLife,
-                    ballPosition: ballPos,
-                    paddlePosition: paddle.position
-                ).forEach(addChild)
-            case .instant:
-                break  // New instant types need explicit handling above this line.
-            case .none:
-                break
-            }
+            handlePowerUpContact(node)
         } else if contact.bodyA.categoryBitMask == PhysicsCategory.paddle
             || contact.bodyB.categoryBitMask == PhysicsCategory.paddle {
             paddle.squash()
@@ -296,9 +290,59 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
 
 }
 
+// MARK: - Multi Ball
+
+private extension GameScene {
+    func spawnExtraBalls(at position: CGPoint, velocity: CGVector) {
+        let (v1, v2) = multiBallVelocities(primary: velocity)
+        for vel in [v1, v2] {
+            let ball = BallNode(radius: Theme.Layout.ballRadius)
+            ball.position = position
+            // velocity must be set before powerUp.addBall(_:): activateSlowBall reads
+            // physicsBody.velocity immediately to capture speedBeforeSlowBall.
+            ball.physicsBody?.velocity = vel
+            addChild(ball)
+            ball.attachTrail(to: self)
+            balls.append(ball)
+            powerUp.addBall(ball)
+        }
+    }
+}
+
 // MARK: - Contact handlers
 
 private extension GameScene {
+    func handlePowerUpContact(_ node: PowerUpNode) {
+        switch powerUp.collect(node) {
+        case .activated(let type):
+            let ballPos = balls.first?.position ?? paddle.position
+            SceneEffects.spawnPowerUpActivationEffect(
+                for: type, ballPosition: ballPos, paddlePosition: paddle.position
+            ).forEach(addChild)
+        case .instant(.extraLife):
+            gameState = gameState.addLife()
+            gameCamera.updateHUD(lives: gameState.lives, score: gameState.score)
+            let ballPos = balls.first?.position ?? paddle.position
+            SceneEffects.spawnPowerUpActivationEffect(
+                for: .extraLife, ballPosition: ballPos, paddlePosition: paddle.position
+            ).forEach(addChild)
+        case .instant(.multiBall):
+            // Only spawn while playing: in waitingToLaunch the ball has zero velocity,
+            // so extra balls would be spawned motionless and never receive launch velocity.
+            guard gameState.phase == .playing,
+                  let primary = balls.first,
+                  let vel = primary.physicsBody?.velocity else { return }
+            spawnExtraBalls(at: primary.position, velocity: vel)
+            SceneEffects.spawnPowerUpActivationEffect(
+                for: .multiBall, ballPosition: primary.position, paddlePosition: paddle.position
+            ).forEach(addChild)
+        case .instant:
+            break  // New instant types need explicit handling above this line.
+        case .none:
+            break
+        }
+    }
+
     /// Overrides ball velocity based on where it hit the paddle.
     /// Ignores sub-paddle contacts (physics glitch guard).
     func reflectBallOffPaddle(contactPoint: CGPoint, ball: BallNode) {
