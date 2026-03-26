@@ -8,6 +8,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var containerView: NSView!
     private var skView: SKView!
     private var didEnterFullScreen = false
+    private var cursorHidden = false
 
     static func main() {
         let app = NSApplication.shared
@@ -51,6 +52,26 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         true
     }
 
+    func applicationWillResignActive(_ notification: Notification) {
+        showCursor()
+    }
+
+    func applicationDidBecomeActive(_ notification: Notification) {
+        if window.isKeyWindow { hideCursor() }
+    }
+
+    private func hideCursor() {
+        guard !cursorHidden else { return }
+        NSCursor.hide()
+        cursorHidden = true
+    }
+
+    private func showCursor() {
+        guard cursorHidden else { return }
+        NSCursor.unhide()
+        cursorHidden = false
+    }
+
     private func setupMenu() {
         let appMenu = NSMenu()
         appMenu.addItem(NSMenuItem(
@@ -68,12 +89,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
 extension AppDelegate: NSWindowDelegate {
     func windowDidBecomeKey(_ notification: Notification) {
+        hideCursor()
         guard !didEnterFullScreen else { return }
         didEnterFullScreen = true
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
             guard let window = self?.window else { return }
             window.toggleFullScreen(nil)
         }
+    }
+
+    func windowDidResignKey(_ notification: Notification) {
+        showCursor()
     }
 
     func windowDidEnterFullScreen(_ notification: Notification) {
