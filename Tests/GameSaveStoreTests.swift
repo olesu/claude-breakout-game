@@ -12,7 +12,7 @@ struct GameSaveStoreTests {
         levelIndex: 1,
         score: 120,
         lives: 2,
-        brickGrid: [[true, false], [false, true]]
+        brickGrid: [[.normal, .empty], [.empty, .normal]]
     )
 
     @Test func loadReturnsNilWhenNoSave() throws {
@@ -39,7 +39,7 @@ struct GameSaveStoreTests {
     @Test func saveOverwritesPreviousSave() throws {
         let store = try makeStore()
         store.save(sampleGame)
-        let updated = SavedGame(levelIndex: 2, score: 200, lives: 1, brickGrid: [[true]])
+        let updated = SavedGame(levelIndex: 2, score: 200, lives: 1, brickGrid: [[.normal]])
         store.save(updated)
         let loaded = try #require(store.load())
         #expect(loaded.levelIndex == 2)

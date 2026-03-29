@@ -62,33 +62,44 @@ struct BrickGridPositionerTests {
     // brickGrid(from:level:) tests
 
     @Test func brickGridAllBricksPresent() {
-        let level = Level(name: "T", grid: [[true, true], [true, true]])
+        let level = Level(name: "T", grid: [[.normal, .normal], [.normal, .normal]])
         let brickSize = CGSize(width: 10, height: 10)
         let bricks = [
-            BrickNode(size: brickSize, row: 0, col: 0),
-            BrickNode(size: brickSize, row: 0, col: 1),
-            BrickNode(size: brickSize, row: 1, col: 0),
-            BrickNode(size: brickSize, row: 1, col: 1)
+            BrickNode(size: brickSize, row: 0, col: 0, cell: .normal),
+            BrickNode(size: brickSize, row: 0, col: 1, cell: .normal),
+            BrickNode(size: brickSize, row: 1, col: 0, cell: .normal),
+            BrickNode(size: brickSize, row: 1, col: 1, cell: .normal)
         ]
         let grid = brickGrid(from: bricks, level: level)
-        #expect(grid == [[true, true], [true, true]])
+        #expect(grid == [[.normal, .normal], [.normal, .normal]])
     }
 
     @Test func brickGridNoBricks() {
-        let level = Level(name: "T", grid: [[true, true], [true, true]])
+        let level = Level(name: "T", grid: [[.normal, .normal], [.normal, .normal]])
         let grid = brickGrid(from: [], level: level)
-        #expect(grid == [[false, false], [false, false]])
+        #expect(grid == [[.empty, .empty], [.empty, .empty]])
     }
 
     @Test func brickGridSparsePattern() {
-        let level = Level(name: "T", grid: [[true, true], [true, true]])
+        let level = Level(name: "T", grid: [[.normal, .normal], [.normal, .normal]])
         let brickSize = CGSize(width: 10, height: 10)
         let bricks = [
-            BrickNode(size: brickSize, row: 0, col: 1),
-            BrickNode(size: brickSize, row: 1, col: 0)
+            BrickNode(size: brickSize, row: 0, col: 1, cell: .normal),
+            BrickNode(size: brickSize, row: 1, col: 0, cell: .normal)
         ]
         let grid = brickGrid(from: bricks, level: level)
-        #expect(grid == [[false, true], [true, false]])
+        #expect(grid == [[.empty, .normal], [.normal, .empty]])
+    }
+
+    @Test func brickGridSnapshotsDamagedMultiHit() {
+        let level = Level(name: "T", grid: [[.multiHit(3), .normal], [.normal, .normal]])
+        let brickSize = CGSize(width: 10, height: 10)
+        let damagedBrick = BrickNode(size: brickSize, row: 0, col: 0, cell: .multiHit(2))
+        let bricks = [damagedBrick]
+        let grid = brickGrid(from: bricks, level: level)
+        // Snapshot captures the cell's current state, not the original level cell
+        #expect(grid[0][0] == .multiHit(2))
+        #expect(grid[0][1] == .empty)
     }
 
     // brickGridOrigin tests

@@ -3,20 +3,28 @@ import Testing
 
 struct LevelTests {
     @Test func brickCountFullGrid() {
-        // Level.one is 5 rows × 8 columns, all true → 40 bricks
+        // Level.one is 5 rows × 8 columns, all normal → 40 bricks
         #expect(Level.one.brickCount == 40)
     }
 
     @Test func brickCountSparseGrid() {
         let level = Level(name: "TEST", grid: [
-            [true, false, true],
-            [false, false, true]
+            [.normal, .empty, .normal],
+            [.empty, .empty, .normal]
         ])
         #expect(level.brickCount == 3)
     }
 
     @Test func brickCountEmptyGrid() {
-        let level = Level(name: "EMPTY", grid: [[false, false], [false, false]])
+        let level = Level(name: "EMPTY", grid: [[.empty, .empty], [.empty, .empty]])
         #expect(level.brickCount == 0)
+    }
+
+    @Test func brickCountIncludesMultiHit() {
+        let level = Level(name: "MULTI", grid: [
+            [.normal, .multiHit(3)],
+            [.multiHit(2), .empty]
+        ])
+        #expect(level.brickCount == 3)
     }
 }

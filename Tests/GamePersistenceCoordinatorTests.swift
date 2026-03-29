@@ -9,7 +9,7 @@ struct GamePersistenceCoordinatorTests {
         return (GamePersistenceCoordinator(store: store), store)
     }
 
-    private let snapshot = SavedGame(levelIndex: 0, score: 100, lives: 3, brickGrid: [[true]])
+    private let snapshot = SavedGame(levelIndex: 0, score: 100, lives: 3, brickGrid: [[.normal]])
 
     @Test func gamePausedSavesSnapshot() throws {
         let (coordinator, store) = try makeCoordinator()

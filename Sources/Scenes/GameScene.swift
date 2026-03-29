@@ -15,7 +15,7 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
     private var powerUp: PowerUpCoordinator!
     private var gameLoop: GameLoopCoordinator!
     private let persistence = GamePersistenceCoordinator()
-    private let savedBrickGrid: [[Bool]]?
+    private let savedBrickGrid: [[BrickCell]]?
     private let inputCoordinator = InputCoordinator()
     #if os(macOS)
     private let mouseTracker = MouseInputTracker()
@@ -25,7 +25,7 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
         size: CGSize,
         levelIndex: Int,
         gameState: GameState,
-        savedBrickGrid: [[Bool]]? = nil
+        savedBrickGrid: [[BrickCell]]? = nil
     ) {
         precondition(Level.all.indices.contains(levelIndex), "levelIndex out of range")
         self.levelIndex = levelIndex
@@ -358,23 +358,26 @@ private extension GameScene {
     }
 
     func handleBrickContact(_ brick: BrickNode, contactPoint: CGPoint) {
-        // Capture all inputs before any mutation
-        let points = Theme.Layout.brickPoints
         let color = brick.color
-        let spawnPowerUp = !powerUp.isPowerBallActive
-
-        // State mutations
-        bricks.removeAll { $0 === brick }
-        gameState = gameState.addScore(points)
-        gameCamera.updateHUD(lives: gameState.lives, score: gameState.score)
-
-        // Visual side-effects
-        SceneEffects.spawnScorePopup(at: contactPoint, points: points).forEach(addChild)
         SceneEffects.spawnSparks(at: contactPoint, color: color).forEach(addChild)
-        brick.destroy { [weak self] in
-            guard let self else { return }
-            if bricks.isEmpty && !gameLoop.levelComplete { gameLoop.markLevelComplete() }
+
+        switch brick.hit() {
+        case .intact(let remaining):
+            brick.applyDamage(remainingHits: remaining)
+        case .destroyed:
+            let points = Theme.Layout.brickPoints
+            let spawnPowerUp = !powerUp.isPowerBallActive
+            bricks.removeAll { $0 === brick }
+            gameState = gameState.addScore(points)
+            gameCamera.updateHUD(lives: gameState.lives, score: gameState.score)
+            SceneEffects.spawnScorePopup(at: contactPoint, points: points).forEach(addChild)
+            brick.destroy { [weak self] in
+                guard let self else { return }
+                if bricks.isEmpty && !gameLoop.levelComplete { gameLoop.markLevelComplete() }
+            }
+            if spawnPowerUp, let node = powerUp.spawnIfEligible(at: brick.position) {
+                addChild(node)
+            }
         }
-        if spawnPowerUp, let node = powerUp.spawnIfEligible(at: brick.position) { addChild(node) }
     }
 }
