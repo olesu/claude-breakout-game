@@ -52,12 +52,9 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
     }
 
     private func setupCamera(in view: SKView) {
-        #if os(iOS)
-        let topSafeArea = view.safeAreaInsets.top
-        #else
-        let topSafeArea: CGFloat = 28  // clears the auto-hiding macOS menu bar in fullscreen
-        #endif
-        let cam = GameCameraNode(sceneSize: size, levelName: level.name, topSafeArea: topSafeArea)
+        let cam = GameCameraNode(
+            sceneSize: size, levelName: level.name, topSafeArea: topSafeAreaInset(for: view)
+        )
         addChild(cam)
         camera = cam
         cam.updateHUD(lives: gameState.lives, score: gameState.score)
@@ -101,17 +98,13 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
     // MARK: - Game loop
 
     override func update(_ currentTime: TimeInterval) {
-        // Silently cull extra balls (index 1+) that have fallen below the floor.
-        // balls[0] (primary) is never silently removed — its fall triggers the life-loss path.
-        while balls.count > 1,
-              let idx = balls.indices.dropFirst()
-                  .first(where: { balls[$0].position.y < frame.minY }) {
+        // Indices are descending — safe to remove without shifting earlier positions.
+        for idx in fallenExtraBallIndices(balls: balls, floorY: frame.minY) {
             let fallen = balls[idx]
             fallen.removeFromParent()
             balls.remove(at: idx)
             powerUp.removeBall(fallen)
         }
-
         switch gameLoop.tick(
             currentTime: currentTime, phase: gameState.phase, floorY: frame.minY, balls: balls
         ) {
@@ -195,11 +188,20 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
     }
 
     override func keyDown(with event: NSEvent) {
-        guard event.characters?.lowercased() == "p" else { return }
-        switch gameState.phase {
-        case .playing: handle(.pause)
-        case .paused:  handle(.resume)
-        default:       break
+        switch event.characters?.lowercased() {
+        case "p":
+            switch gameState.phase {
+            case .playing: handle(.pause)
+            case .paused:  handle(.resume)
+            default:       break
+            }
+        #if DEBUG
+        case "w" where gameState.phase == .playing || gameState.phase == .waitingToLaunch:
+            bricks.forEach { $0.destroy(completion: {}) }  // completion unused: level marked below
+            bricks.removeAll()
+            gameLoop.markLevelComplete()
+        #endif
+        default: break
         }
     }
     #endif
@@ -207,21 +209,18 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
     // MARK: - Physics contact
 
     func didBegin(_ contact: SKPhysicsContact) {
-        if let brick = (contact.bodyA.node as? BrickNode) ?? (contact.bodyB.node as? BrickNode),
-           brick.physicsBody != nil {
-            handleBrickContact(brick, contactPoint: contact.contactPoint)
-        } else if let node = (contact.bodyA.node as? PowerUpNode)
-            ?? (contact.bodyB.node as? PowerUpNode) {
+        switch classifyContact(contact) {
+        case .brick(let brick, let point):
+            handleBrickContact(brick, contactPoint: point)
+        case .powerUp(let node):
             handlePowerUpContact(node)
-        } else if contact.bodyA.categoryBitMask == PhysicsCategory.paddle
-            || contact.bodyB.categoryBitMask == PhysicsCategory.paddle {
+        case .paddleHit(let ball, let point):
             paddle.squash()
-            if let ball = (contact.bodyA.node as? BallNode) ?? (contact.bodyB.node as? BallNode) {
-                reflectBallOffPaddle(contactPoint: contact.contactPoint, ball: ball)
-            }
-        } else if let wall = (contact.bodyA.node as? WallNode)
-            ?? (contact.bodyB.node as? WallNode) {
+            if let ball { reflectBallOffPaddle(contactPoint: point, ball: ball) }
+        case .wallHit(let wall):
             wall.flash()
+        case .unknown:
+            break
         }
     }
 
@@ -295,17 +294,16 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
 
 private extension GameScene {
     func spawnExtraBalls(at position: CGPoint, velocity: CGVector) {
-        let (v1, v2) = multiBallVelocities(primary: velocity)
-        for vel in [v1, v2] {
-            let ball = BallNode(radius: Theme.Layout.ballRadius)
-            ball.position = position
+        for spec in makeExtraBalls(
+            at: position, primaryVelocity: velocity, radius: Theme.Layout.ballRadius
+        ) {
             // velocity must be set before powerUp.addBall(_:): activateSlowBall reads
             // physicsBody.velocity immediately to capture speedBeforeSlowBall.
-            ball.physicsBody?.velocity = vel
-            addChild(ball)
-            ball.attachTrail(to: self)
-            balls.append(ball)
-            powerUp.addBall(ball)
+            spec.ball.physicsBody?.velocity = spec.velocity
+            addChild(spec.ball)
+            spec.ball.attachTrail(to: self)
+            balls.append(spec.ball)
+            powerUp.addBall(spec.ball)
         }
     }
 }

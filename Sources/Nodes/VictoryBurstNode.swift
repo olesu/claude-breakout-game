@@ -24,9 +24,25 @@ final class VictoryBurstNode: SKEmitterNode {
         particleColor = Theme.Color.accent
         particleColorBlendFactor = 1.0
         particleColorSequence = makeColorSequence()
+        particleTexture = VictoryBurstNode.makeCircleTexture()
         zPosition = 5
         // Auto-remove after all particles have died (lifetime + range + birth window)
         run(.sequence([.wait(forDuration: 2.8), .removeFromParent()]))
+    }
+
+    private static func makeCircleTexture(radius: CGFloat = 8) -> SKTexture {
+        let side = Int(radius * 2)
+        guard let ctx = CGContext(
+            data: nil,
+            width: side, height: side,
+            bitsPerComponent: 8, bytesPerRow: 0,
+            space: CGColorSpaceCreateDeviceRGB(),
+            bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
+        ) else { return SKTexture() }
+        ctx.setFillColor(red: 1, green: 1, blue: 1, alpha: 1)
+        ctx.fillEllipse(in: CGRect(x: 0, y: 0, width: side, height: side))
+        guard let image = ctx.makeImage() else { return SKTexture() }
+        return SKTexture(cgImage: image)
     }
 
     private func makeColorSequence() -> SKKeyframeSequence {
