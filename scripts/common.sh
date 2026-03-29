@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 SCHEME="BreakoutGame"
-SIMULATOR="iPhone 16"
+SIMULATOR="iPhone 16,OS=18.6"
 PROJECT="BreakoutGame.xcodeproj"
 
 PRETTY=""

@@ -1,4 +1,8 @@
 import SpriteKit
+#if os(macOS)
+import AppKit
+import CoreGraphics
+#endif
 
 enum GameOutcome { case victory, gameOver }
 
@@ -16,6 +20,11 @@ final class GameSummaryScene: SKScene {
     required init?(coder aDecoder: NSCoder) { fatalError() }
 
     override func didMove(to view: SKView) {
+        #if os(macOS)
+        (NSApp.delegate as? AppDelegate)?.showCursor()
+        let displayBounds = CGDisplayBounds(CGMainDisplayID())
+        CGWarpMouseCursorPosition(CGPoint(x: displayBounds.midX, y: displayBounds.midY))
+        #endif
         backgroundColor = .black
         let starfield = AmbientStarfieldNode(sceneSize: size)
         starfield.position = CGPoint(x: frame.midX, y: frame.maxY)

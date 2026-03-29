@@ -13,6 +13,7 @@ targets:
       - path: Sources
         excludes:
           - AppDelegateMac.swift
+          - Assets.xcassets
     settings:
       base:
         SWIFT_VERSION: "5.0"

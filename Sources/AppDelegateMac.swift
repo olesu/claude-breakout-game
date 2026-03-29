@@ -35,8 +35,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         skView = SKView(frame: NSRect(origin: .zero, size: contentSize))
         skView.autoresizingMask = [.width, .height]
 
-        let scene = SplashScene(size: contentSize)
-        scene.scaleMode = .aspectFit
+        let scene = MacLaunchSplashScene(size: contentSize)
         skView.presentScene(scene)
 
         containerView.addSubview(skView)
@@ -57,16 +56,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func applicationDidBecomeActive(_ notification: Notification) {
-        if window.isKeyWindow { hideCursor() }
+        if window.isKeyWindow {
+            if let scene = skView.scene, scene is GameScene {
+                hideCursor()
+            }
+        }
     }
 
-    private func hideCursor() {
+    func hideCursor() {
         guard !cursorHidden else { return }
         NSCursor.hide()
         cursorHidden = true
     }
 
-    private func showCursor() {
+    func showCursor() {
         guard cursorHidden else { return }
         NSCursor.unhide()
         cursorHidden = false
@@ -89,7 +92,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
 extension AppDelegate: NSWindowDelegate {
     func windowDidBecomeKey(_ notification: Notification) {
-        hideCursor()
         guard !didEnterFullScreen else { return }
         didEnterFullScreen = true
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
@@ -110,13 +112,19 @@ extension AppDelegate: NSWindowDelegate {
         let size = containerView.bounds.size
         let scale = size.height / 844.0
         let barWidth = (size.width - 390.0 * scale) / 2.0
-        guard barWidth > 1 else { return }
-        let leftFrame = NSRect(x: 0, y: 0, width: barWidth, height: size.height)
-        let rightFrame = NSRect(
-            x: size.width - barWidth, y: 0, width: barWidth, height: size.height
-        )
-        containerView.addSubview(LetterboxBarView(frame: leftFrame, side: .left))
-        containerView.addSubview(LetterboxBarView(frame: rightFrame, side: .right))
+        if barWidth > 1 {
+            let leftFrame = NSRect(x: 0, y: 0, width: barWidth, height: size.height)
+            let rightFrame = NSRect(
+                x: size.width - barWidth, y: 0, width: barWidth, height: size.height
+            )
+            containerView.addSubview(LetterboxBarView(frame: leftFrame, side: .left))
+            containerView.addSubview(LetterboxBarView(frame: rightFrame, side: .right))
+        }
+        let splash = SplashScene(size: CGSize(width: 390, height: 844))
+        splash.scaleMode = .aspectFit
+        let fade = SKTransition.fade(withDuration: Theme.Layout.transitionDuration)
+        skView.presentScene(splash, transition: fade)
+        window.makeFirstResponder(skView)
     }
 }
 #endif

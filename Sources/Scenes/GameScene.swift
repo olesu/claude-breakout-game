@@ -47,6 +47,7 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
         setupNodes()
         #if os(macOS)
         mouseTracker.install(on: view)
+        (NSApp.delegate as? AppDelegate)?.hideCursor()
         #endif
     }
 

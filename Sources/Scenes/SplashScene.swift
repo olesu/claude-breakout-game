@@ -1,10 +1,19 @@
 import SpriteKit
+#if os(macOS)
+import AppKit
+import CoreGraphics
+#endif
 
 final class SplashScene: SKScene {
     private let saveStore = GameSaveStore()
     private var savedGame: SavedGame?
 
     override func didMove(to view: SKView) {
+        #if os(macOS)
+        (NSApp.delegate as? AppDelegate)?.showCursor()
+        let displayBounds = CGDisplayBounds(CGMainDisplayID())
+        CGWarpMouseCursorPosition(CGPoint(x: displayBounds.midX, y: displayBounds.midY))
+        #endif
         backgroundColor = .black
         savedGame = saveStore.load()
         let starfield = AmbientStarfieldNode(sceneSize: size)
