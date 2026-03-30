@@ -66,6 +66,8 @@ final class BrickNode: SKSpriteNode {
         if isBonus {
             makeBonusOverlayNodes(size: size).forEach(addChild)
         }
+
+        addBevelOverlays(size: size)
     }
 
     @available(*, unavailable)
@@ -122,6 +124,39 @@ private extension BrickNode {
         let flash = SKAction.colorize(with: .white, colorBlendFactor: 0.5, duration: 0.04)
         let recover = SKAction.colorize(withColorBlendFactor: 0.0, duration: 0.12)
         run(.sequence([flash, recover]))
+    }
+
+    func addBevelOverlays(size: CGSize) {
+        let inset: CGFloat = 1.5
+        let halfW = size.width / 2
+        let halfH = size.height / 2
+
+        let highlightPath = CGMutablePath()
+        highlightPath.move(to: CGPoint(x: -halfW + inset, y: halfH - inset))
+        highlightPath.addLine(to: CGPoint(x: halfW - inset, y: halfH - inset))
+        highlightPath.move(to: CGPoint(x: -halfW + inset, y: halfH - inset))
+        highlightPath.addLine(to: CGPoint(x: -halfW + inset, y: -halfH + inset))
+
+        let highlight = SKShapeNode(path: highlightPath)
+        highlight.strokeColor = .white
+        highlight.lineWidth = 1.5
+        highlight.alpha = 0.35
+        highlight.zPosition = 1
+
+        let shadowPath = CGMutablePath()
+        shadowPath.move(to: CGPoint(x: -halfW + inset, y: -halfH + inset))
+        shadowPath.addLine(to: CGPoint(x: halfW - inset, y: -halfH + inset))
+        shadowPath.move(to: CGPoint(x: halfW - inset, y: halfH - inset))
+        shadowPath.addLine(to: CGPoint(x: halfW - inset, y: -halfH + inset))
+
+        let shadow = SKShapeNode(path: shadowPath)
+        shadow.strokeColor = .black
+        shadow.lineWidth = 1.5
+        shadow.alpha = 0.45
+        shadow.zPosition = 1
+
+        addChild(highlight)
+        addChild(shadow)
     }
 }
 
