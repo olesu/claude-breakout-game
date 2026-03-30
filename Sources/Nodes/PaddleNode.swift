@@ -75,18 +75,18 @@ final class PaddleNode: SKSpriteNode {
     }
 
     private func makeHighlightStrip(size: CGSize) -> SKShapeNode {
-        let stripHeight = size.height * 0.30
+        let stripHeight = size.height * 0.40
         let inset: CGFloat = 4
         let stripWidth = size.width - inset * 2
-        let yCenter = size.height / 2 - stripHeight / 2
-        let rect = CGRect(x: -stripWidth / 2, y: yCenter, width: stripWidth, height: stripHeight)
+        let yOrigin = size.height / 2 - stripHeight / 2
+        let rect = CGRect(x: -stripWidth / 2, y: yOrigin, width: stripWidth, height: stripHeight)
         let radius = stripHeight / 2
         let node = SKShapeNode(path: CGPath(
             roundedRect: rect, cornerWidth: radius, cornerHeight: radius, transform: nil
         ))
         node.fillColor = .white
         node.strokeColor = .clear
-        node.alpha = 0.18
+        node.alpha = 0.35
         node.zPosition = 2
         return node
     }
