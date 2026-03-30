@@ -378,7 +378,9 @@ private extension GameScene {
                 guard let self else { return }
                 if bricks.isEmpty && !gameLoop.levelComplete { gameLoop.markLevelComplete() }
             }
-            if spawnPowerUp, let node = powerUp.spawnIfEligible(at: brick.position) {
+            if brick.isBonus {
+                addChild(powerUp.spawnGuaranteed(at: brick.position))
+            } else if spawnPowerUp, let node = powerUp.spawnIfEligible(at: brick.position) {
                 addChild(node)
             }
         }

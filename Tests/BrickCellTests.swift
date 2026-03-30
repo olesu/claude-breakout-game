@@ -66,4 +66,22 @@ struct BrickCellTests {
         #expect(BrickCell.indestructible != .normal)
         #expect(BrickCell.indestructible != .empty)
     }
+
+    // MARK: - bonus
+
+    @Test func bonusInitialStateIsIntactOne() {
+        #expect(BrickCell.bonus.initialState == .intact(hitsRemaining: 1))
+    }
+
+    @Test func equalityBonus() {
+        #expect(BrickCell.bonus == .bonus)
+        #expect(BrickCell.bonus != .normal)
+        #expect(BrickCell.bonus != .empty)
+        #expect(BrickCell.bonus != .indestructible)
+    }
+
+    @Test func codableRoundTripBonus() throws {
+        let data = try JSONEncoder().encode(BrickCell.bonus)
+        #expect(try JSONDecoder().decode(BrickCell.self, from: data) == .bonus)
+    }
 }

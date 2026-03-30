@@ -4,16 +4,22 @@ final class BrickNode: SKSpriteNode {
     let row: Int
     let col: Int
     let isIndestructible: Bool
+    let isBonus: Bool
     private var brickState: BrickState
     private let initialHits: Int
     private var hitHandled = false
 
-    var currentCell: BrickCell { isIndestructible ? .indestructible : brickState.asCell }
+    var currentCell: BrickCell {
+        if isIndestructible { return .indestructible }
+        if isBonus, case .intact = brickState { return .bonus }
+        return brickState.asCell
+    }
 
     init(size: CGSize, row: Int, col: Int, cell: BrickCell) {
         self.row = row
         self.col = col
         self.isIndestructible = (cell == .indestructible)
+        self.isBonus = (cell == .bonus)
         self.brickState = cell.initialState
         switch self.brickState {
         case .intact(let n): self.initialHits = n
@@ -54,6 +60,10 @@ final class BrickNode: SKSpriteNode {
                 .fadeAlpha(to: 1.0, duration: 0.8)
             ])))
             addChild(border)
+        }
+
+        if isBonus {
+            makeBonusOverlayNodes(size: size).forEach(addChild)
         }
     }
 
@@ -128,4 +138,24 @@ private func makeHatchNode(size: CGSize) -> SKShapeNode {
     node.strokeColor = PlatformColor(white: 1.0, alpha: 0.25)
     node.lineWidth = 1
     return node
+}
+
+private func makeBonusOverlayNodes(size: CGSize) -> [SKNode] {
+    let border = SKShapeNode(rectOf: size)
+    border.fillColor = .clear
+    border.strokeColor = Theme.Color.powerUp
+    border.lineWidth = 1.5
+    border.run(.repeatForever(.sequence([
+        .fadeAlpha(to: 0.2, duration: 0.5),
+        .fadeAlpha(to: 1.0, duration: 0.5)
+    ])))
+
+    let star = SKLabelNode(fontNamed: Theme.Font.bold)
+    star.text = "★"
+    star.fontSize = 9
+    star.fontColor = .white
+    star.verticalAlignmentMode = .center
+    star.horizontalAlignmentMode = .center
+
+    return [border, star]
 }

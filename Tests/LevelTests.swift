@@ -35,4 +35,12 @@ struct LevelTests {
         ])
         #expect(level.brickCount == 3)
     }
+
+    @Test func brickCountIncludesBonus() {
+        let level = Level(name: "BONUS", grid: [
+            [.normal, .bonus, .normal],
+            [.bonus, .empty, .normal]
+        ])
+        #expect(level.brickCount == 5)
+    }
 }

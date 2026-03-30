@@ -1,6 +1,7 @@
 private let e: BrickCell = .empty
 private let n: BrickCell = .normal
 private let i: BrickCell = .indestructible
+private let b: BrickCell = .bonus
 private func m(_ hits: Int) -> BrickCell { .multiHit(hits) }
 
 struct Level {
@@ -11,11 +12,11 @@ struct Level {
         grid.flatMap { $0 }.filter { $0 != .empty && $0 != .indestructible }.count
     }
 
-    // 5 rows × 8 columns, fully packed — 40 bricks
+    // 5 rows × 8 columns, fully packed — 38 normal + 2 bonus = 40 bricks
     static let one = Level(name: "ROOKIE", grid: [
         [n, n, n, n, n, n, n, n],
         [n, n, n, n, n, n, n, n],
-        [n, n, n, n, n, n, n, n],
+        [n, n, n, b, b, n, n, n],
         [n, n, n, n, n, n, n, n],
         [n, n, n, n, n, n, n, n]
     ])
@@ -30,15 +31,15 @@ struct Level {
         [e, n, e, n, e, n, e, n]
     ])
 
-    // 7 rows × 8 columns, diamond — center row has 3-hit bricks
+    // 7 rows × 8 columns, diamond — center row has 3-hit bricks, tips are bonus
     static let three = Level(name: "ACE", grid: [
-        [e, e, e, n, n, e, e, e],
+        [e, e, e, b, b, e, e, e],
         [e, e, n, n, n, n, e, e],
         [e, n, n, n, n, n, n, e],
         [n, n, n, m(3), m(3), n, n, n],
         [e, n, n, n, n, n, n, e],
         [e, e, n, n, n, n, e, e],
-        [e, e, e, n, n, e, e, e]
+        [e, e, e, b, b, e, e, e]
     ])
 
     // 7 rows × 8 columns, fully packed — top row has 2-hit bricks

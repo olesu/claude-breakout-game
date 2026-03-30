@@ -100,6 +100,15 @@ struct BrickGridPositionerTests {
         #expect(grid[0][1] == .empty)
     }
 
+    @Test func brickGridSnapshotsBonusAsBonus() {
+        let level = Level(name: "T", grid: [[.bonus, .normal], [.normal, .normal]])
+        let brickSize = CGSize(width: 10, height: 10)
+        let brick = BrickNode(size: brickSize, row: 0, col: 0, cell: .bonus)
+        let grid = brickGrid(from: [brick], level: level)
+        #expect(grid[0][0] == .bonus)
+        #expect(grid[0][1] == .empty)
+    }
+
     @Test func brickGridSnapshotsDamagedMultiHit() {
         let level = Level(name: "T", grid: [[.multiHit(3), .normal], [.normal, .normal]])
         let brickSize = CGSize(width: 10, height: 10)
@@ -120,6 +129,13 @@ struct BrickGridPositionerTests {
             row: 0, col: 0, levelCell: .empty, savedGrid: nil, layout: layout
         )
         #expect(node == nil)
+    }
+
+    @Test func positionedBrickNodeBonusCell() {
+        let node = positionedBrickNode(
+            row: 0, col: 0, levelCell: .bonus, savedGrid: nil, layout: layout
+        )
+        #expect(node?.isBonus == true)
     }
 
     @Test func positionedBrickNodeNormalCell() {

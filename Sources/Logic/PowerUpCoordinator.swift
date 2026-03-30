@@ -53,6 +53,17 @@ final class PowerUpCoordinator {
         return node
     }
 
+    func spawnGuaranteed(at position: CGPoint) -> PowerUpNode {
+        // Safe: allCases is always non-empty for a non-empty enum.
+        let type = PowerUpType.allCases.randomElement()!
+        let node = PowerUpNode(type: type)
+        node.position = position
+        // Safe: PowerUpNode.init unconditionally assigns physicsBody.
+        node.physicsBody!.velocity = CGVector(dx: 0, dy: -Theme.Layout.powerUpFallSpeed)
+        nodes.append(node)
+        return node
+    }
+
     @discardableResult
     func collect(_ node: PowerUpNode) -> CollectResult {
         node.removeFromParent()
