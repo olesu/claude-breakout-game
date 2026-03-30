@@ -47,6 +47,7 @@ final class PaddleNode: SKSpriteNode {
 
         bloomNode.addChild(glowNode)
         addChild(bloomNode)
+        addChild(makeHighlightStrip(size: size))
     }
 
     func activateWidePaddle() {
@@ -71,6 +72,23 @@ final class PaddleNode: SKSpriteNode {
             .scaleY(to: 1.10, duration: 0.08),
             .scaleY(to: 1.00, duration: 0.06)
         ]), withKey: Self.squashKey)
+    }
+
+    private func makeHighlightStrip(size: CGSize) -> SKShapeNode {
+        let stripHeight = size.height * 0.30
+        let inset: CGFloat = 4
+        let stripWidth = size.width - inset * 2
+        let yCenter = size.height / 2 - stripHeight / 2
+        let rect = CGRect(x: -stripWidth / 2, y: yCenter, width: stripWidth, height: stripHeight)
+        let radius = stripHeight / 2
+        let node = SKShapeNode(path: CGPath(
+            roundedRect: rect, cornerWidth: radius, cornerHeight: radius, transform: nil
+        ))
+        node.fillColor = .white
+        node.strokeColor = .clear
+        node.alpha = 0.18
+        node.zPosition = 2
+        return node
     }
 
     private func setGlowColor(_ tint: PlatformColor) {
