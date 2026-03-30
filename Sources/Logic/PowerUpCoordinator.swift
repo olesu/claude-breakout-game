@@ -53,6 +53,7 @@ final class PowerUpCoordinator {
         return node
     }
 
+    // Intentionally ignores active-state check — bonus bricks always drop.
     func spawnGuaranteed(at position: CGPoint) -> PowerUpNode {
         // Safe: allCases is always non-empty for a non-empty enum.
         let type = PowerUpType.allCases.randomElement()!

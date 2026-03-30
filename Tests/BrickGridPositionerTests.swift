@@ -7,6 +7,8 @@ private func isClose(_ a: CGFloat, _ b: CGFloat, tolerance: CGFloat = 0.001) -> 
 }
 
 struct BrickGridPositionerTests {
+    // Arbitrary fixture size for positional math tests; brickSizeHeightEqualsThemeConstant
+    // covers the theme constant.
     let size = CGSize(width: 34.5, height: 20)
     let origin = CGPoint(x: 8, y: 500)
 
@@ -22,7 +24,7 @@ struct BrickGridPositionerTests {
 
     @Test func brickSizeHeightEqualsThemeConstant() {
         let s = brickSize(sceneWidth: 320, columns: 8, spacing: 4, margin: 8)
-        #expect(isClose(s.height, 20))
+        #expect(isClose(s.height, Theme.Layout.brickHeight))
     }
 
     // brickPosition tests

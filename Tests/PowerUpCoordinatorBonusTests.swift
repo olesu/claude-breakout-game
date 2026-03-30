@@ -10,6 +10,7 @@ struct PowerUpCoordinatorBonusTests {
 
     private func makeCoordinatorWithActivePowerUp() -> PowerUpCoordinator {
         let coordinator = makeCoordinator()
+        // node has no parent — removeFromParent() is a no-op; safe for test fixture use
         coordinator.collect(PowerUpNode(type: .powerBall))
         return coordinator
     }

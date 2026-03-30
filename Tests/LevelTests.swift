@@ -3,8 +3,8 @@ import Testing
 
 struct LevelTests {
     @Test func brickCountFullGrid() {
-        // Level.one is 5 rows × 8 columns, all normal → 40 bricks
-        #expect(Level.one.brickCount == 40)
+        // Level.one is 5 rows × 10 columns, 48 normal + 2 bonus → 50 bricks
+        #expect(Level.one.brickCount == 50)
     }
 
     @Test func brickCountSparseGrid() {

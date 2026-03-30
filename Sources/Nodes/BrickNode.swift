@@ -11,6 +11,7 @@ final class BrickNode: SKSpriteNode {
 
     var currentCell: BrickCell {
         if isIndestructible { return .indestructible }
+        // Only report .bonus while intact; destroyed falls through to .empty via brickState.asCell
         if isBonus, case .intact = brickState { return .bonus }
         return brickState.asCell
     }
