@@ -2,8 +2,8 @@
 import Testing
 
 struct LevelCatalogueTests {
-    @Test func catalogueContainsFourLevels() {
-        #expect(Level.all.count == 4)
+    @Test func catalogueContainsFiveLevels() {
+        #expect(Level.all.count == 5)
     }
 
     @Test func allLevelsHaveAtLeastOneBrick() {
@@ -28,6 +28,6 @@ struct LevelCatalogueTests {
 
     @Test func levelNamesMatchArcadeTheme() {
         let names = Level.all.map(\.name)
-        #expect(names == ["ROOKIE", "HOTSHOT", "ACE", "LEGEND"])
+        #expect(names == ["ROOKIE", "HOTSHOT", "ACE", "LEGEND", "MAZE"])
     }
 }

@@ -1,12 +1,15 @@
 private let e: BrickCell = .empty
 private let n: BrickCell = .normal
+private let i: BrickCell = .indestructible
 private func m(_ hits: Int) -> BrickCell { .multiHit(hits) }
 
 struct Level {
     let name: String
     let grid: [[BrickCell]]
 
-    var brickCount: Int { grid.flatMap { $0 }.filter { $0 != .empty }.count }
+    var brickCount: Int {
+        grid.flatMap { $0 }.filter { $0 != .empty && $0 != .indestructible }.count
+    }
 
     // 5 rows × 8 columns, fully packed — 40 bricks
     static let one = Level(name: "ROOKIE", grid: [
@@ -49,5 +52,17 @@ struct Level {
         [n, n, n, n, n, n, n, n]
     ])
 
-    static let all: [Level] = [.one, .two, .three, .four]
+    // 8 rows × 8 columns, maze with indestructible pillars
+    static let five = Level(name: "MAZE", grid: [
+        [n, n, n, i, i, n, n, n],
+        [n, e, e, e, e, e, e, n],
+        [n, e, n, n, n, n, e, n],
+        [i, e, n, m(2), m(2), n, e, i],
+        [i, e, n, m(2), m(2), n, e, i],
+        [n, e, n, n, n, n, e, n],
+        [n, e, e, e, e, e, e, n],
+        [n, n, n, i, i, n, n, n]
+    ])
+
+    static let all: [Level] = [.one, .two, .three, .four, .five]
 }

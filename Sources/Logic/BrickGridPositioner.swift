@@ -30,6 +30,59 @@ func brickGrid(from bricks: [BrickNode], level: Level) -> [[BrickCell]] {
     return grid
 }
 
+/// Returns `saved` if its dimensions match `shape`, otherwise `nil`.
+/// Column count is compared on the first row only — safe because all grids in this project
+/// are rectangular (guaranteed by level authoring and serialization).
+func validatedSavedGrid(
+    _ saved: [[BrickCell]]?,
+    matchingShape shape: [[BrickCell]]
+) -> [[BrickCell]]? {
+    guard let saved,
+          saved.count == shape.count,
+          saved.first?.count == shape.first?.count else { return nil }
+    return saved
+}
+
+struct BrickLayout {
+    let size: CGSize
+    let spacing: CGFloat
+    let gridOrigin: CGPoint
+}
+
+/// Creates a positioned `BrickNode` for `(row, col)` if a brick should exist there,
+/// otherwise `nil`.
+func positionedBrickNode(
+    row: Int,
+    col: Int,
+    levelCell: BrickCell,
+    savedGrid: [[BrickCell]]?,
+    layout: BrickLayout
+) -> BrickNode? {
+    guard let cell = resolvedBrickCell(
+        levelCell: levelCell, row: row, col: col, savedGrid: savedGrid
+    ) else { return nil }
+    let brick = BrickNode(size: layout.size, row: row, col: col, cell: cell)
+    brick.position = brickPosition(
+        column: col, row: row,
+        size: layout.size, spacing: layout.spacing, gridOrigin: layout.gridOrigin
+    )
+    return brick
+}
+
+/// Returns the cell to place at `(row, col)`, or `nil` if no brick should be placed.
+func resolvedBrickCell(
+    levelCell: BrickCell,
+    row: Int,
+    col: Int,
+    savedGrid: [[BrickCell]]?
+) -> BrickCell? {
+    guard levelCell != .empty else { return nil }
+    guard let saved = savedGrid else { return levelCell }
+    let savedCell = saved[row][col]
+    guard savedCell != .empty else { return nil }
+    return savedCell
+}
+
 func makeBrickNodes(
     for level: Level,
     sceneFrame: CGRect,
@@ -45,32 +98,15 @@ func makeBrickNodes(
     let gridOrigin = brickGridOrigin(
         sceneMinX: sceneFrame.minX, sceneMaxY: sceneFrame.maxY, margin: margin
     )
+    let validSavedGrid = validatedSavedGrid(savedGrid, matchingShape: level.grid)
+    let layout = BrickLayout(size: size, spacing: spacing, gridOrigin: gridOrigin)
 
-    let validSavedGrid = savedGrid.flatMap { saved -> [[BrickCell]]? in
-        guard saved.count == level.grid.count,
-              saved.first?.count == level.grid.first?.count else { return nil }
-        return saved
-    }
-
-    var nodes: [BrickNode] = []
-    for (rowIndex, row) in level.grid.enumerated() {
-        for (colIndex, levelCell) in row.enumerated() {
-            guard levelCell != .empty else { continue }
-            let cell: BrickCell
-            if let saved = validSavedGrid {
-                let savedCell = saved[rowIndex][colIndex]
-                guard savedCell != .empty else { continue }
-                cell = savedCell
-            } else {
-                cell = levelCell
-            }
-            let brick = BrickNode(size: size, row: rowIndex, col: colIndex, cell: cell)
-            brick.position = brickPosition(
-                column: colIndex, row: rowIndex,
-                size: size, spacing: spacing, gridOrigin: gridOrigin
+    return level.grid.enumerated().flatMap { (rowIndex, row) in
+        row.enumerated().compactMap { (colIndex, levelCell) in
+            positionedBrickNode(
+                row: rowIndex, col: colIndex, levelCell: levelCell,
+                savedGrid: validSavedGrid, layout: layout
             )
-            nodes.append(brick)
         }
     }
-    return nodes
 }

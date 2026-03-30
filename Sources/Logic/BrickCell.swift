@@ -2,6 +2,7 @@ enum BrickCell: Equatable {
     case empty
     case normal
     case multiHit(Int)
+    case indestructible
 
     var initialState: BrickState {
         switch self {
@@ -10,13 +11,14 @@ enum BrickCell: Equatable {
         case .multiHit(let n):
             precondition(n >= 2, "multiHit requires at least 2 hits")
             return .intact(hitsRemaining: n)
+        case .indestructible: return .intact(hitsRemaining: 1)
         }
     }
 }
 
 extension BrickCell: Codable {
     private enum CodingKeys: String, CodingKey { case type, hits }
-    private enum TypeKey: String, Codable { case empty, normal, multiHit }
+    private enum TypeKey: String, Codable { case empty, normal, multiHit, indestructible }
 
     func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)
@@ -28,6 +30,8 @@ extension BrickCell: Codable {
         case .multiHit(let n):
             try container.encode(TypeKey.multiHit, forKey: .type)
             try container.encode(n, forKey: .hits)
+        case .indestructible:
+            try container.encode(TypeKey.indestructible, forKey: .type)
         }
     }
 
@@ -38,6 +42,7 @@ extension BrickCell: Codable {
         case .normal: self = .normal
         case .multiHit:
             self = .multiHit(try container.decode(Int.self, forKey: .hits))
+        case .indestructible: self = .indestructible
         }
     }
 }

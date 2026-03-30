@@ -91,6 +91,15 @@ struct BrickGridPositionerTests {
         #expect(grid == [[.empty, .normal], [.normal, .empty]])
     }
 
+    @Test func brickGridSnapshotsIndestructible() {
+        let level = Level(name: "T", grid: [[.indestructible, .normal], [.normal, .normal]])
+        let brickSize = CGSize(width: 10, height: 10)
+        let brick = BrickNode(size: brickSize, row: 0, col: 0, cell: .indestructible)
+        let grid = brickGrid(from: [brick], level: level)
+        #expect(grid[0][0] == .indestructible)
+        #expect(grid[0][1] == .empty)
+    }
+
     @Test func brickGridSnapshotsDamagedMultiHit() {
         let level = Level(name: "T", grid: [[.multiHit(3), .normal], [.normal, .normal]])
         let brickSize = CGSize(width: 10, height: 10)
@@ -100,6 +109,96 @@ struct BrickGridPositionerTests {
         // Snapshot captures the cell's current state, not the original level cell
         #expect(grid[0][0] == .multiHit(2))
         #expect(grid[0][1] == .empty)
+    }
+
+    // positionedBrickNode tests
+
+    var layout: BrickLayout { BrickLayout(size: size, spacing: 4, gridOrigin: origin) }
+
+    @Test func positionedBrickNodeEmptyLevelCell() {
+        let node = positionedBrickNode(
+            row: 0, col: 0, levelCell: .empty, savedGrid: nil, layout: layout
+        )
+        #expect(node == nil)
+    }
+
+    @Test func positionedBrickNodeNormalCell() {
+        let node = positionedBrickNode(
+            row: 0, col: 0, levelCell: .normal, savedGrid: nil, layout: layout
+        )
+        #expect(node?.row == 0)
+        #expect(node?.col == 0)
+    }
+
+    @Test func positionedBrickNodePositionMatchesBrickPosition() {
+        let node = positionedBrickNode(
+            row: 1, col: 2, levelCell: .normal, savedGrid: nil, layout: layout
+        )
+        let expected = brickPosition(column: 2, row: 1, size: size, spacing: 4, gridOrigin: origin)
+        #expect(node?.position == expected)
+    }
+
+    @Test func positionedBrickNodeSavedCellEmpty() {
+        let saved: [[BrickCell]] = [[.empty, .normal]]
+        let node = positionedBrickNode(
+            row: 0, col: 0, levelCell: .normal, savedGrid: saved, layout: layout
+        )
+        #expect(node == nil)
+    }
+
+    // validatedSavedGrid tests
+
+    @Test func validatedSavedGridNilInput() {
+        let shape: [[BrickCell]] = [[.normal, .normal], [.normal, .normal]]
+        #expect(validatedSavedGrid(nil, matchingShape: shape) == nil)
+    }
+
+    @Test func validatedSavedGridMatchingDimensions() {
+        let grid: [[BrickCell]] = [[.normal, .empty], [.empty, .normal]]
+        let shape: [[BrickCell]] = [[.normal, .normal], [.normal, .normal]]
+        #expect(validatedSavedGrid(grid, matchingShape: shape) == grid)
+    }
+
+    @Test func validatedSavedGridRowCountMismatch() {
+        let grid: [[BrickCell]] = [[.normal, .normal]]
+        let shape: [[BrickCell]] = [[.normal, .normal], [.normal, .normal]]
+        #expect(validatedSavedGrid(grid, matchingShape: shape) == nil)
+    }
+
+    @Test func validatedSavedGridColumnCountMismatch() {
+        let grid: [[BrickCell]] = [[.normal, .normal, .normal], [.normal, .normal, .normal]]
+        let shape: [[BrickCell]] = [[.normal, .normal], [.normal, .normal]]
+        #expect(validatedSavedGrid(grid, matchingShape: shape) == nil)
+    }
+
+    // resolvedBrickCell tests
+
+    @Test func resolvedBrickCellEmptyLevelCell() {
+        #expect(resolvedBrickCell(levelCell: .empty, row: 0, col: 0, savedGrid: nil) == nil)
+    }
+
+    @Test func resolvedBrickCellNoSavedGrid() {
+        #expect(resolvedBrickCell(levelCell: .normal, row: 0, col: 0, savedGrid: nil) == .normal)
+    }
+
+    @Test func resolvedBrickCellSavedCellNonEmpty() {
+        let saved: [[BrickCell]] = [[.multiHit(2), .normal]]
+        let result = resolvedBrickCell(levelCell: .normal, row: 0, col: 0, savedGrid: saved)
+        #expect(result == .multiHit(2))
+    }
+
+    @Test func resolvedBrickCellSavedCellEmpty() {
+        let saved: [[BrickCell]] = [[.empty, .normal]]
+        #expect(resolvedBrickCell(levelCell: .normal, row: 0, col: 0, savedGrid: saved) == nil)
+    }
+
+    @Test func resolvedBrickCellIndestructibleOverriddenBySavedEmpty() {
+        // A saved .empty suppresses even an indestructible level cell.
+        // In practice this cannot occur (indestructible bricks are never destroyed),
+        // but the function makes no special exception for .indestructible.
+        let saved: [[BrickCell]] = [[.empty]]
+        let result = resolvedBrickCell(levelCell: .indestructible, row: 0, col: 0, savedGrid: saved)
+        #expect(result == nil)
     }
 
     // brickGridOrigin tests

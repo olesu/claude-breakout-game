@@ -6,6 +6,7 @@ Package.swift
 
 # Xcode build artifacts
 build/
+.build/
 DerivedData/
 xcuserdata/
 *.xcuserdatad/
@@ -16,6 +17,7 @@ xcuserdata/
 # Claude Code — ignore machine-local state, track project config
 .claude/settings.local.json
 .claude/agent-memory-local/
+.claude/agent-memory/
 # Allow project-level config and agents
 !.claude/
 !.claude/settings.json

@@ -27,4 +27,12 @@ struct LevelTests {
         ])
         #expect(level.brickCount == 3)
     }
+
+    @Test func brickCountExcludesIndestructible() {
+        let level = Level(name: "INDESTRUCTIBLE", grid: [
+            [.normal, .indestructible, .normal],
+            [.indestructible, .empty, .normal]
+        ])
+        #expect(level.brickCount == 3)
+    }
 }

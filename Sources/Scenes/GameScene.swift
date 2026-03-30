@@ -12,6 +12,7 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
     private var paddle: PaddleNode!
     private var balls: [BallNode] = []
     private var bricks: [BrickNode] = []
+    private var permanentBricks: [BrickNode] = []
     private var powerUp: PowerUpCoordinator!
     private var gameLoop: GameLoopCoordinator!
     private let persistence = GamePersistenceCoordinator()
@@ -88,8 +89,10 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
         primaryBall.attachTrail(to: self)
         balls = [primaryBall]
 
-        bricks = makeBrickNodes(for: level, sceneFrame: frame, savedGrid: savedBrickGrid)
-        bricks.forEach { addChild($0) }
+        let allBricks = makeBrickNodes(for: level, sceneFrame: frame, savedGrid: savedBrickGrid)
+        permanentBricks = allBricks.filter { $0.isIndestructible }
+        bricks = allBricks.filter { !$0.isIndestructible }
+        allBricks.forEach { addChild($0) }
 
         powerUp = PowerUpCoordinator(balls: balls, paddle: paddle)
         gameLoop = GameLoopCoordinator(paddle: paddle, powerUp: powerUp)
@@ -253,7 +256,7 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
             levelIndex: levelIndex,
             score: gameState.score,
             lives: gameState.lives,
-            brickGrid: brickGrid(from: bricks, level: level)
+            brickGrid: brickGrid(from: bricks + permanentBricks, level: level)
         )
     }
 

@@ -33,6 +33,10 @@ struct BrickCellTests {
         #expect(BrickCell.normal != .multiHit(1))
     }
 
+    @Test func indestructibleInitialStateIsIntactOne() {
+        #expect(BrickCell.indestructible.initialState == .intact(hitsRemaining: 1))
+    }
+
     // MARK: - Codable
 
     @Test func codableRoundTripEmpty() throws {
@@ -48,5 +52,18 @@ struct BrickCellTests {
     @Test func codableRoundTripMultiHit() throws {
         let data = try JSONEncoder().encode(BrickCell.multiHit(3))
         #expect(try JSONDecoder().decode(BrickCell.self, from: data) == .multiHit(3))
+    }
+
+    @Test func codableRoundTripIndestructible() throws {
+        let data = try JSONEncoder().encode(BrickCell.indestructible)
+        #expect(try JSONDecoder().decode(BrickCell.self, from: data) == .indestructible)
+    }
+
+    // MARK: - Equatable (indestructible)
+
+    @Test func equalityIndestructible() {
+        #expect(BrickCell.indestructible == .indestructible)
+        #expect(BrickCell.indestructible != .normal)
+        #expect(BrickCell.indestructible != .empty)
     }
 }
