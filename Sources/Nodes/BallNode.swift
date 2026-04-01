@@ -9,29 +9,48 @@ final class BallNode: SKNode {
     private var speedBeforeSlowBall: CGFloat?
 
     init(radius: CGFloat) {
-        let bloomNode = SKEffectNode()
-        if let filter = CIFilter(name: "CIBloom") {
-            filter.setValue(8.0, forKey: "inputRadius")
-            filter.setValue(1.0, forKey: "inputIntensity")
-            bloomNode.filter = filter
-            bloomNode.shouldRasterize = true
-        }
-
-        let diameter = radius * 2
-        let shapeNode = SKShapeNode(
-            path: CGPath(
-                ellipseIn: CGRect(x: -radius, y: -radius, width: diameter, height: diameter),
-                transform: nil
-            )
-        )
-        shapeNode.fillColor = Theme.Color.primary
-        shapeNode.strokeColor = .clear
+        let shapeNode = BallNode.makeShapeNode(radius: radius)
+        let bloomNode = BallNode.makeBloomNode()
+        bloomNode.addChild(shapeNode)
+        bloomNode.addChild(BallNode.makeShadeNode(radius: radius))
+        bloomNode.addChild(BallNode.makeSpecularHighlight(radius: radius))
 
         bloom = bloomNode
         shape = shapeNode
         trail = BallTrailNode()
         super.init()
 
+        physicsBody = BallNode.makePhysicsBody(radius: radius)
+        addChild(BallNode.makeShadowNode(radius: radius))
+        addChild(bloomNode)
+        addChild(trail)
+    }
+
+    private static func makeShapeNode(radius: CGFloat) -> SKShapeNode {
+        let diameter = radius * 2
+        let node = SKShapeNode(
+            path: CGPath(
+                ellipseIn: CGRect(x: -radius, y: -radius, width: diameter, height: diameter),
+                transform: nil
+            )
+        )
+        node.fillColor = Theme.Color.primary
+        node.strokeColor = .clear
+        return node
+    }
+
+    private static func makeBloomNode() -> SKEffectNode {
+        let node = SKEffectNode()
+        if let filter = CIFilter(name: "CIBloom") {
+            filter.setValue(8.0, forKey: "inputRadius")
+            filter.setValue(1.0, forKey: "inputIntensity")
+            node.filter = filter
+            node.shouldRasterize = true
+        }
+        return node
+    }
+
+    private static func makePhysicsBody(radius: CGFloat) -> SKPhysicsBody {
         let body = SKPhysicsBody(circleOfRadius: radius)
         body.restitution = 1
         body.friction = 0
@@ -42,16 +61,7 @@ final class BallNode: SKNode {
         body.categoryBitMask = PhysicsCategory.ball
         body.collisionBitMask =
             PhysicsCategory.wall | PhysicsCategory.paddle | PhysicsCategory.brick
-        physicsBody = body
-
-        bloomNode.addChild(shapeNode)
-        bloomNode.addChild(BallNode.makeShadeNode(radius: radius))
-        bloomNode.addChild(BallNode.makeSpecularHighlight(radius: radius))
-
-        let shadowNode = BallNode.makeShadowNode(radius: radius)
-        addChild(shadowNode)
-        addChild(bloomNode)
-        addChild(trail)
+        return body
     }
 
     private static func makeSpecularHighlight(radius: CGFloat) -> SKShapeNode {
