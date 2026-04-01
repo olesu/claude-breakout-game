@@ -19,7 +19,7 @@ enum Theme {
     }
 
     enum Color {
-        static let primary: PlatformColor = .white
+        static let primary: PlatformColor = PlatformColor(white: 0.93, alpha: 1)
         static let secondary: PlatformColor = .lightGray
         static let accent: PlatformColor = .yellow
         static let danger: PlatformColor = .red

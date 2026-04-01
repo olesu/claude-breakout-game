@@ -45,8 +45,79 @@ final class BallNode: SKNode {
         physicsBody = body
 
         bloomNode.addChild(shapeNode)
+        bloomNode.addChild(BallNode.makeShadeNode(radius: radius))
+        bloomNode.addChild(BallNode.makeSpecularHighlight(radius: radius))
+
+        let shadowNode = BallNode.makeShadowNode(radius: radius)
+        addChild(shadowNode)
         addChild(bloomNode)
         addChild(trail)
+    }
+
+    private static func makeSpecularHighlight(radius: CGFloat) -> SKShapeNode {
+        let node = SKShapeNode(
+            path: CGPath(
+                ellipseIn: CGRect(
+                    x: -radius * 0.35,
+                    y: radius * 0.22,
+                    width: radius * 0.35,
+                    height: radius * 0.25
+                ),
+                transform: nil
+            )
+        )
+        node.fillColor = .white
+        node.strokeColor = .clear
+        node.alpha = 0.55
+        node.isUserInteractionEnabled = false
+        return node
+    }
+
+    private static func makeShadeNode(radius: CGFloat) -> SKShapeNode {
+        let node = SKShapeNode(
+            path: CGPath(
+                ellipseIn: CGRect(
+                    x: -radius * 0.3,
+                    y: -radius * 0.8,
+                    width: radius * 1.1,
+                    height: radius * 1.1
+                ),
+                transform: nil
+            )
+        )
+        node.fillColor = .black
+        node.strokeColor = .clear
+        node.alpha = 0.28
+        node.isUserInteractionEnabled = false
+        return node
+    }
+
+    private static func makeShadowNode(radius: CGFloat) -> SKEffectNode {
+        let effectNode = SKEffectNode()
+        if let blur = CIFilter(name: "CIGaussianBlur") {
+            blur.setValue(4.0, forKey: "inputRadius")
+            effectNode.filter = blur
+            effectNode.shouldRasterize = true
+        }
+        let shadow = SKShapeNode(
+            path: CGPath(
+                ellipseIn: CGRect(
+                    x: -radius * 1.6,
+                    y: -(radius * 0.5) - radius * 0.15,
+                    width: radius * 3.2,
+                    height: radius
+                ),
+                transform: nil
+            )
+        )
+        shadow.fillColor = .black
+        shadow.strokeColor = .clear
+        shadow.isUserInteractionEnabled = false
+        effectNode.addChild(shadow)
+        effectNode.alpha = 0.35
+        effectNode.zPosition = -1
+        effectNode.isUserInteractionEnabled = false
+        return effectNode
     }
 
     /// Wire the trail's targetNode so particles stay in scene coordinates as the ball moves.
