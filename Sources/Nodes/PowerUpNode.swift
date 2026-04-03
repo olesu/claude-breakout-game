@@ -8,41 +8,12 @@ final class PowerUpNode: SKNode {
         super.init()
 
         let size = Theme.Layout.powerUpSize
-        let body = SKPhysicsBody(rectangleOf: size)
-        body.isDynamic = true
-        body.affectedByGravity = false
-        body.categoryBitMask = PhysicsCategory.powerUp
-        body.collisionBitMask = 0
-        body.contactTestBitMask = PhysicsCategory.paddle
-        physicsBody = body
+        physicsBody = makePowerUpBody(size: size)
 
-        let bloom = SKEffectNode()
-        if let filter = CIFilter(name: "CIBloom") {
-            filter.setValue(6.0, forKey: "inputRadius")
-            filter.setValue(0.9, forKey: "inputIntensity")
-            bloom.filter = filter
-            bloom.shouldRasterize = true
-        }
-
-        let rect = CGRect(
-            x: -size.width / 2, y: -size.height / 2,
-            width: size.width, height: size.height
-        )
-        let path = CGMutablePath()
-        path.addRoundedRect(in: rect, cornerWidth: size.height / 2, cornerHeight: size.height / 2)
-        let shape = SKShapeNode(path: path)
-        shape.fillColor = .clear
-        shape.strokeColor = type.nodeColor
-        shape.lineWidth = 1.5
-
-        let label = SKLabelNode(fontNamed: Theme.Font.bold)
-        label.text = type.label
-        label.fontSize = 10
-        label.fontColor = type.nodeColor
-        label.verticalAlignmentMode = .center
-
-        bloom.addChild(shape)
-        bloom.addChild(label)
+        let bloom = makePowerUpBloom()
+        bloom.addChild(makePillShape(size: size, color: type.nodeColor))
+        bloom.addChild(makePillHighlight(size: size))
+        bloom.addChild(makeTypeLabel(type: type))
         addChild(bloom)
 
         run(.repeatForever(.sequence([
@@ -65,4 +36,65 @@ private extension PowerUpType {
         case .multiBall: return Theme.Color.powerUp
         }
     }
+}
+
+// MARK: - Private helpers
+
+private func makePowerUpBody(size: CGSize) -> SKPhysicsBody {
+    let body = SKPhysicsBody(rectangleOf: size)
+    body.isDynamic = true
+    body.affectedByGravity = false
+    body.categoryBitMask = PhysicsCategory.powerUp
+    body.collisionBitMask = 0
+    body.contactTestBitMask = PhysicsCategory.paddle
+    return body
+}
+
+private func makePowerUpBloom() -> SKEffectNode {
+    let bloom = SKEffectNode()
+    if let filter = CIFilter(name: "CIBloom") {
+        filter.setValue(6.0, forKey: "inputRadius")
+        filter.setValue(0.9, forKey: "inputIntensity")
+        bloom.filter = filter
+        bloom.shouldRasterize = true
+    }
+    return bloom
+}
+
+private func makePillShape(size: CGSize, color: PlatformColor) -> SKShapeNode {
+    let rect = CGRect(
+        x: -size.width / 2, y: -size.height / 2,
+        width: size.width, height: size.height
+    )
+    let path = CGMutablePath()
+    path.addRoundedRect(in: rect, cornerWidth: size.height / 2, cornerHeight: size.height / 2)
+    let shape = SKShapeNode(path: path)
+    shape.fillColor = .clear
+    shape.strokeColor = color
+    shape.lineWidth = 1.5
+    return shape
+}
+
+private func makePillHighlight(size: CGSize) -> SKShapeNode {
+    let capRadius = size.height / 2
+    let path = CGMutablePath()
+    path.move(to: CGPoint(x: -(size.width / 2 - capRadius), y: size.height * 0.25))
+    path.addLine(to: CGPoint(x: size.width / 2 - capRadius, y: size.height * 0.25))
+    let highlight = SKShapeNode(path: path)
+    highlight.strokeColor = .white
+    highlight.lineWidth = 1
+    highlight.alpha = 0.45
+    highlight.zPosition = 1
+    highlight.isUserInteractionEnabled = false
+    return highlight
+}
+
+private func makeTypeLabel(type: PowerUpType) -> SKLabelNode {
+    let label = SKLabelNode(fontNamed: Theme.Font.bold)
+    label.text = type.label
+    label.fontSize = 10
+    label.fontColor = type.nodeColor
+    label.verticalAlignmentMode = .center
+    label.zPosition = 2
+    return label
 }
