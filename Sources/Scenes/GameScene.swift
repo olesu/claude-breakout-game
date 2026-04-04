@@ -68,6 +68,9 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
 
     private func setupBackground() {
         backgroundColor = .black
+        let backdrop = BackdropNode(size: frame.size)
+        backdrop.position = CGPoint(x: frame.midX, y: frame.midY)
+        addChild(backdrop)
         makeWallNodes(for: frame).forEach { addChild($0) }
         let starfield = AmbientStarfieldNode(sceneSize: size)
         starfield.position = CGPoint(x: frame.midX, y: frame.maxY)

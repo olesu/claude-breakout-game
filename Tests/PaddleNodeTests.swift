@@ -16,10 +16,10 @@ import SpriteKit
         paddle.deactivateWidePaddle()
     }
 
-    @Test("init adds all six overlay layers")
+    @Test("init adds all seven overlay layers")
     func initAddsOverlayChildren() {
         let paddle = PaddleNode(sceneWidth: 390)
-        // shadow + bodyHighlight + bloomNode + groove + specular + topShine
-        #expect(paddle.children.count == 6)
+        // dropShadow + body + bottomEdgeShade + bloom + groove + specular + topShine
+        #expect(paddle.children.count == 7)
     }
 }

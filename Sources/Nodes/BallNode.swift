@@ -21,7 +21,7 @@ final class BallNode: SKNode {
         super.init()
 
         physicsBody = BallNode.makePhysicsBody(radius: radius)
-        addChild(BallNode.makeShadowNode(radius: radius))
+        addChild(ShadowNode.makeBallShadow(radius: radius))
         addChild(bloomNode)
         addChild(trail)
     }
@@ -100,34 +100,6 @@ final class BallNode: SKNode {
         node.alpha = 0.28
         node.isUserInteractionEnabled = false
         return node
-    }
-
-    private static func makeShadowNode(radius: CGFloat) -> SKEffectNode {
-        let effectNode = SKEffectNode()
-        if let blur = CIFilter(name: "CIGaussianBlur") {
-            blur.setValue(4.0, forKey: "inputRadius")
-            effectNode.filter = blur
-            effectNode.shouldRasterize = true
-        }
-        let shadow = SKShapeNode(
-            path: CGPath(
-                ellipseIn: CGRect(
-                    x: -radius * 1.6,
-                    y: -(radius * 0.5) - radius * 0.15,
-                    width: radius * 3.2,
-                    height: radius
-                ),
-                transform: nil
-            )
-        )
-        shadow.fillColor = .black
-        shadow.strokeColor = .clear
-        shadow.isUserInteractionEnabled = false
-        effectNode.addChild(shadow)
-        effectNode.alpha = 0.35
-        effectNode.zPosition = -1
-        effectNode.isUserInteractionEnabled = false
-        return effectNode
     }
 
     /// Wire the trail's targetNode so particles stay in scene coordinates as the ball moves.

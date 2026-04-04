@@ -26,6 +26,7 @@ final class PaddleNode: SKSpriteNode {
 
         physicsBody = PaddleNode.makePhysicsBody(size: size)
 
+        addChild(ShadowNode.makePaddleShadow(size: size))
         addChild(body)
         addChild(PaddleNode.makeBottomEdgeShade(size: size))
         addChild(bloomNode)

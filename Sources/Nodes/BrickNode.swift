@@ -30,6 +30,7 @@ final class BrickNode: SKSpriteNode {
             ? Theme.Color.indestructible
             : Theme.Color.brickColors[row % Theme.Color.brickColors.count]
         super.init(texture: nil, color: rowColor, size: size)
+        addChild(ShadowNode.makeBrickShadow(size: size, color: rowColor))
         let body = SKPhysicsBody(rectangleOf: size)
         body.isDynamic = false
         body.restitution = 1

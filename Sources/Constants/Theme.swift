@@ -32,6 +32,10 @@ enum Theme {
             PlatformColor(red: 0.4, green: 0.8, blue: 1.0, alpha: 1)
         static let extraLife: PlatformColor =
             PlatformColor(red: 0.2, green: 1.0, blue: 0.4, alpha: 1)
+        static let backdropFill: PlatformColor =
+            PlatformColor(red: 0.04, green: 0.04, blue: 0.10, alpha: 1)
+        static let gridLine: PlatformColor =
+            PlatformColor(red: 0.50, green: 0.10, blue: 0.90, alpha: 1)
         static let indestructible: PlatformColor = PlatformColor(white: 0.3, alpha: 1.0)
         static let indestructibleBorder: PlatformColor =
             PlatformColor(red: 0.0, green: 0.95, blue: 1.0, alpha: 0.7)
@@ -76,5 +80,9 @@ enum Theme {
         static let slowBallFactor: CGFloat = 0.6
         static let paddleMaxAngle: CGFloat = .pi / 3     // 60° from vertical at paddle edge
         static let ballMinVerticalRatio: CGFloat = 0.2   // safety-net: minimum |dy| / speed
+        static let gridSpacing: CGFloat = 36
+        static let shadowOffset = CGVector(dx: 8, dy: -10)
+        static let shadowAlpha: CGFloat = 0.70        // ball/paddle: needs punch on dark backdrop
+        static let brickShadowAlpha: CGFloat = 0.15   // brick: neon colours are already vivid
     }
 }
