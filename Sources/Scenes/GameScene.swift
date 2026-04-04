@@ -218,7 +218,7 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
         case .powerUp(let node):
             handlePowerUpContact(node)
         case .paddleHit(let ball, let point):
-            paddle.squash()
+            if gameState.phase != .waitingToLaunch { paddle.squash() }
             if let ball { reflectBallOffPaddle(contactPoint: point, ball: ball) }
         case .wallHit(let wall):
             wall.flash()

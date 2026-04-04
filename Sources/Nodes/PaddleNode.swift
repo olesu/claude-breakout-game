@@ -5,7 +5,7 @@ final class PaddleNode: SKSpriteNode {
     private static let widePaddleKey = "widePaddle"
     private static let squashKey = "squash"
 
-    // Glow overlay: a rounded-rect shape inside a bloom effect node.
+    private let bodyLayer: SKShapeNode
     private let glowShape: SKShapeNode
 
     init(sceneWidth: CGFloat) {
@@ -13,41 +13,25 @@ final class PaddleNode: SKSpriteNode {
         let height = Theme.Layout.paddleHeight
         let size = CGSize(width: width, height: height)
 
-        let bloomNode = SKEffectNode()
-        if let filter = CIFilter(name: "CIBloom") {
-            filter.setValue(10.0, forKey: "inputRadius")
-            filter.setValue(0.8, forKey: "inputIntensity")
-            bloomNode.filter = filter
-            bloomNode.shouldRasterize = true
-        }
-        bloomNode.zPosition = 1
-
-        let rect = CGRect(x: -width / 2, y: -height / 2, width: width, height: height)
-        let glowPath = CGPath(
-            roundedRect: rect, cornerWidth: height / 2, cornerHeight: height / 2, transform: nil
-        )
-        let glowNode = SKShapeNode(path: glowPath)
-        glowNode.fillColor = Theme.Color.primary
-        glowNode.strokeColor = Theme.Color.primary
-        glowNode.lineWidth = 2
-        glowNode.alpha = 0.55
-
+        let bloomNode = PaddleNode.makeBloomNode(size: size)
+        let glowNode = PaddleNode.makeGlowShape(size: size)
+        bloomNode.addChild(glowNode)
         glowShape = glowNode
 
-        super.init(texture: nil, color: Theme.Color.primary, size: size)
+        let body = PaddleNode.makeBodyLayer(size: size)
+        bodyLayer = body
 
-        let body = SKPhysicsBody(rectangleOf: size)
-        body.isDynamic = false
-        body.restitution = 1
-        body.friction = 0
-        body.categoryBitMask = PhysicsCategory.paddle
-        body.collisionBitMask = PhysicsCategory.ball
-        body.contactTestBitMask = PhysicsCategory.ball | PhysicsCategory.powerUp
-        physicsBody = body
+        // Base sprite is transparent — all rendering is done via child shape layers.
+        super.init(texture: nil, color: .clear, size: size)
 
-        bloomNode.addChild(glowNode)
+        physicsBody = PaddleNode.makePhysicsBody(size: size)
+
+        addChild(body)
+        addChild(PaddleNode.makeBottomEdgeShade(size: size))
         addChild(bloomNode)
-        addChild(makeHighlightStrip(size: size))
+        addChild(PaddleNode.makeGrooveLayer(size: size))
+        addChild(PaddleNode.makeSpecularLayer(size: size))
+        addChild(PaddleNode.makeTopShineLayer(size: size))
     }
 
     func activateWidePaddle() {
@@ -74,27 +58,154 @@ final class PaddleNode: SKSpriteNode {
         ]), withKey: Self.squashKey)
     }
 
-    private func makeHighlightStrip(size: CGSize) -> SKShapeNode {
-        let stripHeight = size.height * 0.40
-        let inset: CGFloat = 4
-        let stripWidth = size.width - inset * 2
-        let yOrigin = size.height / 2 - stripHeight / 2
-        let rect = CGRect(x: -stripWidth / 2, y: yOrigin, width: stripWidth, height: stripHeight)
-        let radius = stripHeight / 2
-        let node = SKShapeNode(path: CGPath(
-            roundedRect: rect, cornerWidth: radius, cornerHeight: radius, transform: nil
-        ))
-        node.fillColor = .white
-        node.strokeColor = .clear
-        node.alpha = 0.35
-        node.zPosition = 2
+    private func setGlowColor(_ tint: PlatformColor) {
+        bodyLayer.fillColor = tint
+        bodyLayer.strokeColor = tint
+        glowShape.fillColor = tint
+        glowShape.strokeColor = tint
+    }
+
+    // MARK: - Layer factories
+
+    private static func makePhysicsBody(size: CGSize) -> SKPhysicsBody {
+        let body = SKPhysicsBody(rectangleOf: size)
+        body.isDynamic = false
+        body.restitution = 1
+        body.friction = 0
+        body.categoryBitMask = PhysicsCategory.paddle
+        body.collisionBitMask = PhysicsCategory.ball
+        body.contactTestBitMask = PhysicsCategory.ball | PhysicsCategory.powerUp
+        return body
+    }
+
+    private static func makePillPath(size: CGSize) -> CGPath {
+        let w = size.width
+        let h = size.height
+        let rect = CGRect(x: -w / 2, y: -h / 2, width: w, height: h)
+        return CGPath(
+            roundedRect: rect,
+            cornerWidth: h / 2,
+            cornerHeight: h / 2,
+            transform: nil
+        )
+    }
+
+    private static func makeBloomNode(size: CGSize) -> SKEffectNode {
+        let node = SKEffectNode()
+        if let filter = CIFilter(name: "CIBloom") {
+            filter.setValue(10.0, forKey: "inputRadius")
+            filter.setValue(0.8, forKey: "inputIntensity")
+            node.filter = filter
+            node.shouldRasterize = true
+        }
+        node.zPosition = 3
         return node
     }
 
-    private func setGlowColor(_ tint: PlatformColor) {
-        glowShape.fillColor = tint
-        glowShape.strokeColor = tint
-        color = tint
+    private static func makeGlowShape(size: CGSize) -> SKShapeNode {
+        let node = SKShapeNode(path: makePillPath(size: size))
+        node.fillColor = Theme.Color.primary
+        node.strokeColor = Theme.Color.primary
+        node.lineWidth = 2
+        node.alpha = 0.55
+        node.isUserInteractionEnabled = false
+        return node
+    }
+
+    /// The main pill body — pill-shaped so corners are genuinely rounded.
+    private static func makeBodyLayer(size: CGSize) -> SKShapeNode {
+        let node = SKShapeNode(path: makePillPath(size: size))
+        node.fillColor = Theme.Color.primary
+        node.strokeColor = .clear
+        node.zPosition = 0
+        node.isUserInteractionEnabled = false
+        return node
+    }
+
+    /// Pill shifted downward so only its top arc is visible inside the body pill,
+    /// creating a curved dark bottom edge that makes the surface read as cylindrical.
+    private static func makeBottomEdgeShade(size: CGSize) -> SKShapeNode {
+        let w = size.width
+        let h = size.height
+        let shift = h * 0.40
+        let rect = CGRect(x: -w / 2, y: -h / 2 - shift, width: w, height: h)
+        let path = CGPath(
+            roundedRect: rect,
+            cornerWidth: h / 2,
+            cornerHeight: h / 2,
+            transform: nil
+        )
+        let node = SKShapeNode(path: path)
+        node.fillColor = .black
+        node.strokeColor = .clear
+        node.alpha = 0.60
+        node.zPosition = 1
+        node.isUserInteractionEnabled = false
+        return node
+    }
+
+    /// Thin centred stripe — the contrasting dark chrome groove.
+    private static func makeGrooveLayer(size: CGSize) -> SKShapeNode {
+        let inset: CGFloat = 6
+        let gw = size.width - inset * 2
+        let gh = max(2, size.height * 0.14)
+        let path = CGPath(
+            roundedRect: CGRect(x: -gw / 2, y: -gh / 2, width: gw, height: gh),
+            cornerWidth: gh / 2,
+            cornerHeight: gh / 2,
+            transform: nil
+        )
+        let node = SKShapeNode(path: path)
+        node.fillColor = .black
+        node.strokeColor = .clear
+        node.alpha = 0.70
+        node.zPosition = 4
+        node.isUserInteractionEnabled = false
+        return node
+    }
+
+    /// Top strip specular — bright highlight on the upper face of the cylinder.
+    private static func makeSpecularLayer(size: CGSize) -> SKShapeNode {
+        let inset: CGFloat = 4
+        let sw = size.width - inset * 2
+        let sh = size.height * 0.36
+        let yOrigin = size.height / 2 - sh
+        let path = CGPath(
+            roundedRect: CGRect(x: -sw / 2, y: yOrigin, width: sw, height: sh),
+            cornerWidth: sh / 2,
+            cornerHeight: sh / 2,
+            transform: nil
+        )
+        let node = SKShapeNode(path: path)
+        node.fillColor = .white
+        node.strokeColor = .clear
+        node.alpha = 0.70
+        node.zPosition = 5
+        node.isUserInteractionEnabled = false
+        return node
+    }
+
+    /// Upper-left elliptical hot-spot — specular point that makes the surface read as curved.
+    private static func makeTopShineLayer(size: CGSize) -> SKShapeNode {
+        let w = size.width
+        let h = size.height
+        let node = SKShapeNode(
+            path: CGPath(
+                ellipseIn: CGRect(
+                    x: -(w * 0.3),
+                    y: h * 0.15,
+                    width: w * 0.28,
+                    height: h * 0.30
+                ),
+                transform: nil
+            )
+        )
+        node.fillColor = .white
+        node.strokeColor = .clear
+        node.alpha = 0.45
+        node.zPosition = 6
+        node.isUserInteractionEnabled = false
+        return node
     }
 
     @available(*, unavailable)
