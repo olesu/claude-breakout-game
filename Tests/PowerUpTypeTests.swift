@@ -47,4 +47,12 @@ struct PowerUpTypeTests {
         #expect(PowerUpType.multiBall.duration == nil)
     }
 
+    @Test func laser_label_isLZ() {
+        #expect(PowerUpType.laser.label == "LZ")
+    }
+
+    @Test func laser_duration_matchesThemeConstant() {
+        #expect(PowerUpType.laser.duration == Theme.Layout.powerUpDuration)
+    }
+
 }

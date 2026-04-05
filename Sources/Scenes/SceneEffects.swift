@@ -52,6 +52,11 @@ enum SceneEffects {
                 rippleRing(at: ballPosition, delay: 0, scale: 5.0, alpha: 1.0, lineWidth: 2.0),
                 rippleRing(at: ballPosition, delay: 0.1, scale: 7.0, alpha: 0.5, lineWidth: 1.5)
             ]
+        case .laser:
+            return [
+                rippleRing(at: paddlePosition, delay: 0, scale: 4.0, alpha: 1.0, lineWidth: 2.0),
+                rippleRing(at: paddlePosition, delay: 0.1, scale: 6.0, alpha: 0.5, lineWidth: 1.5)
+            ]
         }
     }
 

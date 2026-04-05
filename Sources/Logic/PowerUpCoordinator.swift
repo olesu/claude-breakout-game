@@ -10,10 +10,13 @@ final class PowerUpCoordinator {
     private var balls: [BallNode]
     private let paddle: PaddleNode
     private var nodes: [PowerUpNode] = []
+    private var laserNodes: [LaserNode] = []
+    private var laserCooldown: TimeInterval = 0
     private var state = PowerUpState()
     private let dropProbability: Double
 
     var isPowerBallActive: Bool { state.active == .powerBall }
+    var isLaserActive: Bool { state.active == .laser }
 
     init(
         balls: [BallNode],
@@ -38,6 +41,8 @@ final class PowerUpCoordinator {
             }
             return true
         }
+        laserNodes = laserNodes.filter { $0.parent != nil }
+        laserCooldown = max(0, laserCooldown - delta)
     }
 
     func spawnIfEligible(at position: CGPoint) -> PowerUpNode? {
@@ -96,6 +101,23 @@ final class PowerUpCoordinator {
         balls.removeAll { $0 === ball }
     }
 
+    func fireLasers(from paddlePosition: CGPoint, paddleHalfWidth: CGFloat) -> [LaserNode] {
+        guard isLaserActive, laserCooldown <= 0 else { return [] }
+        laserCooldown = Theme.Layout.laserFireCooldown
+        let yStart = paddlePosition.y + Theme.Layout.paddleHeight / 2
+            + Theme.Layout.laserSize.height / 2
+        let offsets: [CGFloat] = [-paddleHalfWidth * 0.5, paddleHalfWidth * 0.5]
+        let newLasers = offsets.map { dx -> LaserNode in
+            let node = LaserNode()
+            node.position = CGPoint(x: paddlePosition.x + dx, y: yStart)
+            // Safe: LaserNode.init unconditionally assigns physicsBody.
+            node.physicsBody!.velocity = CGVector(dx: 0, dy: Theme.Layout.laserSpeed)
+            return node
+        }
+        laserNodes.append(contentsOf: newLasers)
+        return newLasers
+    }
+
     func clearAll() {
         if state.isActive, let type = state.active {
             state = state.clear()
@@ -104,6 +126,8 @@ final class PowerUpCoordinator {
         // Nodes may be falling but not yet collected; always clear them.
         nodes.forEach { $0.removeFromParent() }
         nodes.removeAll()
+        laserNodes.forEach { $0.removeFromParent() }
+        laserNodes.removeAll()
     }
 
     // MARK: - Effect dispatch
@@ -115,6 +139,7 @@ final class PowerUpCoordinator {
         case .slowBall: balls.forEach { applyEffect(for: type, to: $0) }
         case .extraLife: break  // instant effect; handled by caller via CollectResult
         case .multiBall: break  // activation handled separately via CollectResult
+        case .laser: break      // firing is input-driven; no persistent ball/paddle mutation
         }
     }
 
@@ -122,7 +147,7 @@ final class PowerUpCoordinator {
         switch type {
         case .powerBall: ball.activatePowerBall()
         case .slowBall: ball.activateSlowBall()
-        case .widePaddle, .extraLife, .multiBall: break
+        case .widePaddle, .extraLife, .multiBall, .laser: break
         }
     }
 
@@ -133,6 +158,7 @@ final class PowerUpCoordinator {
         case .slowBall: balls.forEach { $0.deactivateSlowBall() }
         case .extraLife: break  // no ongoing effect to remove
         case .multiBall: break  // ended when all extra balls are lost
+        case .laser: break      // in-flight lasers complete naturally; no persistent state to undo
         }
     }
 }

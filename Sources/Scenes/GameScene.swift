@@ -169,6 +169,7 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
             hittingPauseButton: nodes(at: loc).contains { $0.name == "pauseButton" },
             phase: gameState.phase
         ))
+        if gameState.phase == .playing { fireLasersIfActive() }
     }
 
     override func touchesMoved(_ touches: Set<UITouch>, with event: UIEvent?) {
@@ -201,6 +202,8 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
             case .paused:  handle(.resume)
             default:       break
             }
+        case " " where gameState.phase == .playing:
+            fireLasersIfActive()
         #if DEBUG
         case "w" where gameState.phase == .playing || gameState.phase == .waitingToLaunch:
             bricks.forEach { $0.destroy(completion: {}) }  // completion unused: level marked below
@@ -225,6 +228,8 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
             if let ball { reflectBallOffPaddle(contactPoint: point, ball: ball) }
         case .wallHit(let wall):
             wall.flash()
+        case .laser(let laser, let brick, let point):
+            handleLaserContact(laser, brick: brick, contactPoint: point)
         case .unknown:
             break
         }
@@ -283,17 +288,6 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
         }
     }
 
-    private func advanceLevel() {
-        let nextIndex = levelIndex + 1
-        if nextIndex < Level.all.count {
-            gameState = gameState.resetForNextLevel()
-            present(GameScene(size: size, levelIndex: nextIndex, gameState: gameState))
-        } else {
-            persistence.levelVictory()
-            present(GameSummaryScene(size: size, outcome: .victory, score: gameState.score))
-        }
-    }
-
 }
 
 // MARK: - Multi Ball
@@ -348,6 +342,17 @@ private extension GameScene {
         }
     }
 
+    func advanceLevel() {
+        let nextIndex = levelIndex + 1
+        if nextIndex < Level.all.count {
+            gameState = gameState.resetForNextLevel()
+            present(GameScene(size: size, levelIndex: nextIndex, gameState: gameState))
+        } else {
+            persistence.levelVictory()
+            present(GameSummaryScene(size: size, outcome: .victory, score: gameState.score))
+        }
+    }
+
     /// Overrides ball velocity based on where it hit the paddle.
     /// Ignores sub-paddle contacts (physics glitch guard).
     func reflectBallOffPaddle(contactPoint: CGPoint, ball: BallNode) {
@@ -388,4 +393,16 @@ private extension GameScene {
             }
         }
     }
+
+    func handleLaserContact(_ laser: LaserNode, brick: BrickNode?, contactPoint: CGPoint) {
+        laser.removeFromParent()
+        if let brick { handleBrickContact(brick, contactPoint: contactPoint) }
+    }
+
+    func fireLasersIfActive() {
+        let halfWidth = paddle.size.width * paddle.xScale / 2
+        powerUp.fireLasers(from: paddle.position, paddleHalfWidth: halfWidth)
+            .forEach(addChild)
+    }
+
 }

@@ -5,6 +5,7 @@ enum ContactEvent {
     case powerUp(PowerUpNode)
     case paddleHit(ball: BallNode?, contactPoint: CGPoint)
     case wallHit(WallNode)
+    case laser(LaserNode, brick: BrickNode?, contactPoint: CGPoint)
     case unknown
 }
 
@@ -14,6 +15,10 @@ func classifyContact(_ contact: SKPhysicsContact) -> ContactEvent {
     let a = contact.bodyA.node
     let b = contact.bodyB.node
 
+    if let laser = (a as? LaserNode) ?? (b as? LaserNode) {
+        let brick = (a as? BrickNode) ?? (b as? BrickNode)
+        return .laser(laser, brick: brick, contactPoint: contact.contactPoint)
+    }
     if let brick = (a as? BrickNode) ?? (b as? BrickNode), brick.physicsBody != nil {
         return .brick(brick, contactPoint: contact.contactPoint)
     }

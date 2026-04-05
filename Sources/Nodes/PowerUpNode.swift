@@ -34,6 +34,7 @@ private extension PowerUpType {
         case .slowBall: return Theme.Color.slowBall
         case .extraLife: return Theme.Color.extraLife
         case .multiBall: return Theme.Color.powerUp
+        case .laser: return Theme.Color.laser
         }
     }
 }

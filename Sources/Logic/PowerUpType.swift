@@ -6,6 +6,7 @@ enum PowerUpType: CaseIterable {
     case slowBall
     case extraLife
     case multiBall
+    case laser
 
     var label: String {
         switch self {
@@ -14,6 +15,7 @@ enum PowerUpType: CaseIterable {
         case .slowBall: return "SB"
         case .extraLife: return "+1"
         case .multiBall: return "MB"
+        case .laser: return "LZ"
         }
     }
 
@@ -24,6 +26,7 @@ enum PowerUpType: CaseIterable {
         case .slowBall: return Theme.Layout.powerUpDuration
         case .extraLife: return nil
         case .multiBall: return nil
+        case .laser: return Theme.Layout.powerUpDuration
         }
     }
 }

@@ -88,6 +88,35 @@ struct PowerUpCoordinatorTests {
         #expect(newBall.isPowerBall)
     }
 
+    // MARK: - fireLasers
+
+    @Test func fireLasers_whenLaserNotActive_returnsEmpty() {
+        let coordinator = makeCoordinator()
+        #expect(coordinator.fireLasers(from: .zero, paddleHalfWidth: 50).isEmpty)
+    }
+
+    @Test func fireLasers_whenLaserActive_returnsTwoNodes() {
+        let coordinator = makeCoordinator()
+        coordinator.collect(PowerUpNode(type: .laser))
+        let nodes = coordinator.fireLasers(from: .zero, paddleHalfWidth: 50)
+        #expect(nodes.count == 2)
+    }
+
+    @Test func fireLasers_withinCooldown_returnsEmpty() {
+        let coordinator = makeCoordinator()
+        coordinator.collect(PowerUpNode(type: .laser))
+        _ = coordinator.fireLasers(from: .zero, paddleHalfWidth: 50)
+        #expect(coordinator.fireLasers(from: .zero, paddleHalfWidth: 50).isEmpty)
+    }
+
+    @Test func fireLasers_afterCooldownExpires_returnsTwoNodes() {
+        let coordinator = makeCoordinator()
+        coordinator.collect(PowerUpNode(type: .laser))
+        _ = coordinator.fireLasers(from: .zero, paddleHalfWidth: 50)
+        coordinator.update(delta: Theme.Layout.laserFireCooldown + 0.01, floorY: -999)
+        #expect(coordinator.fireLasers(from: .zero, paddleHalfWidth: 50).count == 2)
+    }
+
     @Test func removeBall_effectNotRestoredWhenEffectExpires() {
         // If a ball is removed from the coordinator, deactivateSlowBall should NOT be
         // called on it when the timed effect expires — so its velocity stays at the

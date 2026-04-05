@@ -32,6 +32,8 @@ enum Theme {
             PlatformColor(red: 0.4, green: 0.8, blue: 1.0, alpha: 1)
         static let extraLife: PlatformColor =
             PlatformColor(red: 0.2, green: 1.0, blue: 0.4, alpha: 1)
+        static let laser: PlatformColor =
+            PlatformColor(red: 1.0, green: 0.15, blue: 0.9, alpha: 1)
         static let backdropFill: PlatformColor =
             PlatformColor(red: 0.04, green: 0.04, blue: 0.10, alpha: 1)
         static let gridLine: PlatformColor =
@@ -78,6 +80,9 @@ enum Theme {
         static let powerUpDropProbability: Double = 0.12
         static let paddleWidthMultiplier: CGFloat = 1.5
         static let slowBallFactor: CGFloat = 0.6
+        static let laserSize: CGSize = CGSize(width: 4, height: 20)
+        static let laserSpeed: CGFloat = 650
+        static let laserFireCooldown: TimeInterval = 0.25
         static let paddleMaxAngle: CGFloat = .pi / 3     // 60° from vertical at paddle edge
         static let ballMinVerticalRatio: CGFloat = 0.2   // safety-net: minimum |dy| / speed
         static let gridSpacing: CGFloat = 36
