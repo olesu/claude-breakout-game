@@ -1,28 +1,19 @@
-import CoreImage
 import SpriteKit
 
 enum ShadowNode {
-    /// Blurred, tinted rectangle — attach to a `BrickNode` child.
-    /// The blur filter is applied each frame so the shadow renders at full Retina resolution.
-    static func makeBrickShadow(size: CGSize, color: PlatformColor) -> SKEffectNode {
-        let effectNode = SKEffectNode()
-        if let blur = CIFilter(name: "CIGaussianBlur") {
-            blur.setValue(3.0, forKey: "inputRadius")
-            effectNode.filter = blur
-        }
-        let shape = SKShapeNode(rectOf: size)
-        shape.fillColor = color
-        shape.strokeColor = .clear
-        shape.isUserInteractionEnabled = false
-        effectNode.addChild(shape)
-        effectNode.alpha = Theme.Layout.brickShadowAlpha
-        effectNode.position = CGPoint(
+    /// Flat tinted rectangle — attach to a `BrickNode` child.
+    static func makeBrickShadow(size: CGSize, color: PlatformColor) -> SKShapeNode {
+        let node = SKShapeNode(rectOf: size)
+        node.fillColor = color
+        node.strokeColor = .clear
+        node.alpha = Theme.Layout.brickShadowAlpha
+        node.position = CGPoint(
             x: Theme.Layout.shadowOffset.dx,
             y: Theme.Layout.shadowOffset.dy
         )
-        effectNode.zPosition = -2
-        effectNode.isUserInteractionEnabled = false
-        return effectNode
+        node.zPosition = -2
+        node.isUserInteractionEnabled = false
+        return node
     }
 
     /// Flat pill ellipse — attach as first child of `PaddleNode`.
