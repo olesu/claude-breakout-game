@@ -58,7 +58,7 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
         )
         addChild(cam)
         camera = cam
-        cam.updateHUD(lives: gameState.lives, score: gameState.score)
+        cam.updateHUD(lives: gameState.lives, score: gameState.score, comboMultiplier: gameState.comboMultiplier)
     }
 
     private func configurePhysics() {
@@ -137,7 +137,7 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
         case .launchAndMovePaddle(let x):
             guard let primary = balls.first else { return }
             gameState = gameState.launch()
-            gameCamera.updateHUD(lives: gameState.lives, score: gameState.score)
+            gameCamera.updateHUD(lives: gameState.lives, score: gameState.score, comboMultiplier: gameState.comboMultiplier)
             movePaddle(to: x)
             SceneEffects.spawnLaunchRipple(at: primary.position).forEach(addChild)
             primary.launch()
@@ -276,7 +276,7 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
 
         // Visual side-effects
         gameCamera.shake()
-        gameCamera.updateHUD(lives: gameState.lives, score: gameState.score)
+        gameCamera.updateHUD(lives: gameState.lives, score: gameState.score, comboMultiplier: gameState.comboMultiplier)
         SceneEffects.spawnBallLossFlash(
             sceneSize: size, center: CGPoint(x: frame.midX, y: frame.midY)
         ).forEach(addChild)
@@ -320,7 +320,7 @@ private extension GameScene {
             ).forEach(addChild)
         case .instant(.extraLife):
             gameState = gameState.addLife()
-            gameCamera.updateHUD(lives: gameState.lives, score: gameState.score)
+            gameCamera.updateHUD(lives: gameState.lives, score: gameState.score, comboMultiplier: gameState.comboMultiplier)
             let ballPos = balls.first?.position ?? paddle.position
             SceneEffects.spawnPowerUpActivationEffect(
                 for: .extraLife, ballPosition: ballPos, paddlePosition: paddle.position
@@ -357,6 +357,15 @@ private extension GameScene {
     /// Ignores sub-paddle contacts (physics glitch guard).
     func reflectBallOffPaddle(contactPoint: CGPoint, ball: BallNode) {
         guard contactPoint.y >= paddle.position.y, let body = ball.physicsBody else { return }
+
+        // Réinitialiser le combo et notifier le joueur si le multiplicateur était significatif
+        let wasHighCombo = gameState.comboMultiplier >= 3
+        gameState = gameState.paddleContact()
+        gameCamera.updateHUD(lives: gameState.lives, score: gameState.score, comboMultiplier: gameState.comboMultiplier)
+        if wasHighCombo {
+            addChild(ComboPopupNode(kind: .reset, at: CGPoint(x: paddle.position.x, y: paddle.position.y + 30)))
+        }
+
         let speed = hypot(body.velocity.dx, body.velocity.dy)
         let halfWidth = paddle.size.width * paddle.xScale / 2
         body.velocity = paddleReflectedVelocity(
@@ -376,12 +385,26 @@ private extension GameScene {
         case .intact(let remaining):
             brick.applyDamage(remainingHits: remaining)
         case .destroyed:
-            let points = Theme.Layout.brickPoints
+            // Incrémenter les hits consécutifs AVANT le calcul du score pour appliquer le bon tier
+            let prevMultiplier = gameState.comboMultiplier
+            gameState = gameState.brickDestroyed()
+            let currentMultiplier = gameState.comboMultiplier
+            let earnedPoints = Theme.Layout.brickPoints * currentMultiplier
+
             let spawnPowerUp = !powerUp.isPowerBallActive
             bricks.removeAll { $0 === brick }
-            gameState = gameState.addScore(points)
-            gameCamera.updateHUD(lives: gameState.lives, score: gameState.score)
-            SceneEffects.spawnScorePopup(at: contactPoint, points: points).forEach(addChild)
+            gameState = gameState.addScore(earnedPoints)
+            gameCamera.updateHUD(lives: gameState.lives, score: gameState.score, comboMultiplier: currentMultiplier)
+            SceneEffects.spawnScorePopup(at: contactPoint, points: earnedPoints).forEach(addChild)
+
+            // Popup de tier combo si le multiplicateur vient de monter
+            if currentMultiplier > prevMultiplier {
+                addChild(ComboPopupNode(
+                    kind: .tierUp(multiplier: currentMultiplier),
+                    at: CGPoint(x: contactPoint.x, y: contactPoint.y + 20)
+                ))
+            }
+
             brick.destroy { [weak self] in
                 guard let self else { return }
                 if bricks.isEmpty && !gameLoop.levelComplete { gameLoop.markLevelComplete() }
