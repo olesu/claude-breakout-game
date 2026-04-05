@@ -2,6 +2,7 @@ import SpriteKit
 
 enum ShadowNode {
     /// Flat tinted rectangle — attach to a `BrickNode` child.
+    /// Bricks are static, so a plain shape avoids per-frame Core Image filter evaluation.
     static func makeBrickShadow(size: CGSize, color: PlatformColor) -> SKShapeNode {
         let node = SKShapeNode(rectOf: size)
         node.fillColor = color
