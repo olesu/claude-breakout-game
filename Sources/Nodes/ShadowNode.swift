@@ -3,13 +3,12 @@ import SpriteKit
 
 enum ShadowNode {
     /// Blurred, tinted rectangle — attach to a `BrickNode` child.
-    /// When the blur filter is available, `shouldRasterize = true` so it is computed once.
+    /// The blur filter is applied each frame so the shadow renders at full Retina resolution.
     static func makeBrickShadow(size: CGSize, color: PlatformColor) -> SKEffectNode {
         let effectNode = SKEffectNode()
         if let blur = CIFilter(name: "CIGaussianBlur") {
             blur.setValue(3.0, forKey: "inputRadius")
             effectNode.filter = blur
-            effectNode.shouldRasterize = true
         }
         let shape = SKShapeNode(rectOf: size)
         shape.fillColor = color

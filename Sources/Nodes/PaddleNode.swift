@@ -97,7 +97,6 @@ final class PaddleNode: SKSpriteNode {
             filter.setValue(10.0, forKey: "inputRadius")
             filter.setValue(0.8, forKey: "inputIntensity")
             node.filter = filter
-            node.shouldRasterize = true
         }
         node.zPosition = 3
         return node

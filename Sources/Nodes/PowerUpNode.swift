@@ -56,7 +56,6 @@ private func makePowerUpBloom() -> SKEffectNode {
         filter.setValue(6.0, forKey: "inputRadius")
         filter.setValue(0.9, forKey: "inputIntensity")
         bloom.filter = filter
-        bloom.shouldRasterize = true
     }
     return bloom
 }

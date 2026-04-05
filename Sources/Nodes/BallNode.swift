@@ -45,7 +45,6 @@ final class BallNode: SKNode {
             filter.setValue(8.0, forKey: "inputRadius")
             filter.setValue(1.0, forKey: "inputIntensity")
             node.filter = filter
-            node.shouldRasterize = true
         }
         return node
     }
