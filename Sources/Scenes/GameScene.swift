@@ -98,7 +98,7 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
         allBricks.forEach { addChild($0) }
 
         powerUp = PowerUpCoordinator(balls: balls, paddle: paddle)
-        gameLoop = GameLoopCoordinator(paddle: paddle, powerUp: powerUp)
+        gameLoop = GameLoopCoordinator(powerUp: powerUp)
     }
 
     // MARK: - Game loop
@@ -112,7 +112,12 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
             powerUp.removeBall(fallen)
         }
         switch gameLoop.tick(
-            currentTime: currentTime, phase: gameState.phase, floorY: frame.minY, balls: balls
+            currentTime: currentTime,
+            phase: gameState.phase,
+            floorY: frame.minY,
+            balls: balls,
+            paddlePosition: paddle.position,
+            paddleHalfHeight: paddle.size.height / 2
         ) {
         case .handleBallLoss:    handleBallLoss()
         case .advanceLevel:      advanceLevel()

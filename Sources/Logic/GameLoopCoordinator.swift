@@ -1,14 +1,12 @@
 import SpriteKit
 
 final class GameLoopCoordinator {
-    private let paddle: PaddleNode
     private let powerUp: PowerUpCoordinator
 
     private var lastUpdateTime: TimeInterval = 0
     private(set) var levelComplete = false
 
-    init(paddle: PaddleNode, powerUp: PowerUpCoordinator) {
-        self.paddle = paddle
+    init(powerUp: PowerUpCoordinator) {
         self.powerUp = powerUp
     }
 
@@ -16,11 +14,14 @@ final class GameLoopCoordinator {
         levelComplete = true
     }
 
+    // swiftlint:disable:next function_parameter_count
     func tick(
         currentTime: TimeInterval,
         phase: GamePhase,
         floorY: CGFloat,
-        balls: [BallNode]
+        balls: [BallNode],
+        paddlePosition: CGPoint,
+        paddleHalfHeight: CGFloat
     ) -> FrameAction {
         let delta = frameDelta(last: lastUpdateTime, current: currentTime)
         lastUpdateTime = currentTime
@@ -34,7 +35,13 @@ final class GameLoopCoordinator {
 
         // resetBall runs before enforceMinimumVerticalSpeed. This is safe because
         // resetBall only triggers in .waitingToLaunch, which the speed guard excludes.
-        if case .resetBall = action { resetBall(primary: balls.first) }
+        if case .resetBall = action {
+            resetBall(
+                primary: balls.first,
+                paddlePosition: paddlePosition,
+                paddleHalfHeight: paddleHalfHeight
+            )
+        }
         enforceMinimumVerticalSpeed(phase: phase, balls: balls)
         powerUp.update(delta: delta, floorY: floorY)
 
@@ -45,12 +52,12 @@ final class GameLoopCoordinator {
         lastUpdateTime = 0
     }
 
-    private func resetBall(primary: BallNode?) {
+    private func resetBall(primary: BallNode?, paddlePosition: CGPoint, paddleHalfHeight: CGFloat) {
         guard let primary else { return }
         primary.physicsBody?.velocity = .zero
         primary.position = ballRestingPosition(
-            paddlePosition: paddle.position,
-            paddleHalfHeight: paddle.size.height / 2,
+            paddlePosition: paddlePosition,
+            paddleHalfHeight: paddleHalfHeight,
             ballRadius: Theme.Layout.ballRadius
         )
     }
