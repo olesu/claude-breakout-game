@@ -18,6 +18,8 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
     private let persistence = GamePersistenceCoordinator()
     private let savedBrickGrid: [[BrickCell]]?
     private let inputCoordinator = InputCoordinator()
+    /// Suivi du combo de destructions consécutives de briques
+    private let comboTracker = ComboTracker()
     #if os(macOS)
     private let mouseTracker = MouseInputTracker()
     #endif
@@ -58,7 +60,7 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
         )
         addChild(cam)
         camera = cam
-        cam.updateHUD(lives: gameState.lives, score: gameState.score, comboMultiplier: gameState.comboMultiplier)
+        cam.updateHUD(lives: gameState.lives, score: gameState.score, comboMultiplier: comboTracker.multiplier)
     }
 
     private func configurePhysics() {
@@ -104,7 +106,7 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
     // MARK: - Game loop
 
     override func update(_ currentTime: TimeInterval) {
-        // Indices are descending — safe to remove without shifting earlier positions.
+        // Les indices sont décroissants — suppression sûre sans décalage des positions précédentes.
         for idx in fallenExtraBallIndices(balls: balls, floorY: frame.minY) {
             let fallen = balls[idx]
             fallen.removeFromParent()
@@ -137,7 +139,7 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
         case .launchAndMovePaddle(let x):
             guard let primary = balls.first else { return }
             gameState = gameState.launch()
-            gameCamera.updateHUD(lives: gameState.lives, score: gameState.score, comboMultiplier: gameState.comboMultiplier)
+            gameCamera.updateHUD(lives: gameState.lives, score: gameState.score, comboMultiplier: comboTracker.multiplier)
             movePaddle(to: x)
             SceneEffects.spawnLaunchRipple(at: primary.position).forEach(addChild)
             primary.launch()
@@ -148,7 +150,7 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
         paddle.position.x = clampedPaddleX(
             touchX: x,
             sceneWidth: frame.width,
-            halfPaddleWidth: paddle.size.width * paddle.xScale / 2  // xScale grows with wide paddle
+            halfPaddleWidth: paddle.size.width * paddle.xScale / 2  // xScale grandit avec le wide paddle
         )
     }
 
@@ -206,7 +208,7 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
             fireLasersIfActive()
         #if DEBUG
         case "w" where gameState.phase == .playing || gameState.phase == .waitingToLaunch:
-            bricks.forEach { $0.destroy(completion: {}) }  // completion unused: level marked below
+            bricks.forEach { $0.destroy(completion: {}) }  // completion inutilisée : level marqué ci-dessous
             bricks.removeAll()
             gameLoop.markLevelComplete()
         #endif
@@ -269,19 +271,21 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
     }
 
     private func handleBallLoss() {
-        // State mutations
+        // Réinitialise le combo à chaque perte de balle
+        comboTracker.reset()
+        // Mutations d'état
         powerUp.clearAll()
         gameState = gameState.ballLost()
         let isGameOver = gameState.phase == .gameOver
 
-        // Visual side-effects
+        // Effets visuels
         gameCamera.shake()
-        gameCamera.updateHUD(lives: gameState.lives, score: gameState.score, comboMultiplier: gameState.comboMultiplier)
+        gameCamera.updateHUD(lives: gameState.lives, score: gameState.score, comboMultiplier: comboTracker.multiplier)
         SceneEffects.spawnBallLossFlash(
             sceneSize: size, center: CGPoint(x: frame.midX, y: frame.midY)
         ).forEach(addChild)
 
-        // Scene transition (happens last)
+        // Transition de scène (en dernier)
         if isGameOver {
             persistence.gameOver()
             present(GameSummaryScene(size: size, outcome: .gameOver, score: gameState.score))
@@ -297,8 +301,8 @@ private extension GameScene {
         for spec in makeExtraBalls(
             at: position, primaryVelocity: velocity, radius: Theme.Layout.ballRadius
         ) {
-            // velocity must be set before powerUp.addBall(_:): activateSlowBall reads
-            // physicsBody.velocity immediately to capture speedBeforeSlowBall.
+            // La velocity doit être définie avant powerUp.addBall(_:) : activateSlowBall lit
+            // physicsBody.velocity immédiatement pour capturer speedBeforeSlowBall.
             spec.ball.physicsBody?.velocity = spec.velocity
             addChild(spec.ball)
             spec.ball.attachTrail(to: self)
@@ -320,14 +324,14 @@ private extension GameScene {
             ).forEach(addChild)
         case .instant(.extraLife):
             gameState = gameState.addLife()
-            gameCamera.updateHUD(lives: gameState.lives, score: gameState.score, comboMultiplier: gameState.comboMultiplier)
+            gameCamera.updateHUD(lives: gameState.lives, score: gameState.score, comboMultiplier: comboTracker.multiplier)
             let ballPos = balls.first?.position ?? paddle.position
             SceneEffects.spawnPowerUpActivationEffect(
                 for: .extraLife, ballPosition: ballPos, paddlePosition: paddle.position
             ).forEach(addChild)
         case .instant(.multiBall):
-            // Only spawn while playing: in waitingToLaunch the ball has zero velocity,
-            // so extra balls would be spawned motionless and never receive launch velocity.
+            // Spawn uniquement en phase playing : en waitingToLaunch la balle a une velocity nulle,
+            // les balles supplémentaires seraient donc immobiles et ne recevraient jamais la velocity de lancement.
             guard gameState.phase == .playing,
                   let primary = balls.first,
                   let vel = primary.physicsBody?.velocity else { return }
@@ -336,7 +340,7 @@ private extension GameScene {
                 for: .multiBall, ballPosition: primary.position, paddlePosition: paddle.position
             ).forEach(addChild)
         case .instant:
-            break  // New instant types need explicit handling above this line.
+            break  // Les nouveaux types instant doivent être gérés explicitement au-dessus.
         case .none:
             break
         }
@@ -353,18 +357,10 @@ private extension GameScene {
         }
     }
 
-    /// Overrides ball velocity based on where it hit the paddle.
-    /// Ignores sub-paddle contacts (physics glitch guard).
+    /// Recalcule la velocity de la balle selon l'endroit où elle a touché la raquette.
+    /// Ignore les contacts sous la raquette (protection contre les glitches physiques).
     func reflectBallOffPaddle(contactPoint: CGPoint, ball: BallNode) {
         guard contactPoint.y >= paddle.position.y, let body = ball.physicsBody else { return }
-
-        // Réinitialiser le combo et notifier le joueur si le multiplicateur était significatif
-        let wasHighCombo = gameState.comboMultiplier >= 3
-        gameState = gameState.paddleContact()
-        gameCamera.updateHUD(lives: gameState.lives, score: gameState.score, comboMultiplier: gameState.comboMultiplier)
-        if wasHighCombo {
-            addChild(ComboPopupNode(kind: .reset, at: CGPoint(x: paddle.position.x, y: paddle.position.y + 30)))
-        }
 
         let speed = hypot(body.velocity.dx, body.velocity.dy)
         let halfWidth = paddle.size.width * paddle.xScale / 2
@@ -385,17 +381,20 @@ private extension GameScene {
         case .intact(let remaining):
             brick.applyDamage(remainingHits: remaining)
         case .destroyed:
-            // Incrémenter les hits consécutifs AVANT le calcul du score pour appliquer le bon tier
-            let prevMultiplier = gameState.comboMultiplier
-            gameState = gameState.brickDestroyed()
-            let currentMultiplier = gameState.comboMultiplier
+            // Enregistrer le hit et obtenir le multiplicateur courant
+            let prevMultiplier = comboTracker.multiplier
+            let currentMultiplier = comboTracker.recordHit()
             let earnedPoints = Theme.Layout.brickPoints * currentMultiplier
 
             let spawnPowerUp = !powerUp.isPowerBallActive
             bricks.removeAll { $0 === brick }
             gameState = gameState.addScore(earnedPoints)
             gameCamera.updateHUD(lives: gameState.lives, score: gameState.score, comboMultiplier: currentMultiplier)
-            SceneEffects.spawnScorePopup(at: contactPoint, points: earnedPoints).forEach(addChild)
+            SceneEffects.spawnScorePopup(
+                at: contactPoint,
+                points: earnedPoints,
+                multiplier: currentMultiplier > 1 ? currentMultiplier : nil
+            ).forEach(addChild)
 
             // Popup de tier combo si le multiplicateur vient de monter
             if currentMultiplier > prevMultiplier {
