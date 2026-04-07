@@ -3,6 +3,7 @@ import SpriteKit
 import Testing
 
 @Suite("ContactCoordinator")
+// swiftlint:disable:next type_body_length
 struct ContactCoordinatorTests {
 
     // MARK: - Helpers

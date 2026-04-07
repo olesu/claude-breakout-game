@@ -13,3 +13,11 @@ identifier_name:
 
 trailing_comma:
   mandatory_comma: false
+
+type_body_length:
+  warning: 150
+  error: 200
+
+function_body_length:
+  warning: 40
+  error: 60

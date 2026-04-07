@@ -3,6 +3,8 @@ import SpriteKit
 import AppKit
 #endif
 
+// Thin orchestrator; body length reflects coordinator wiring, not logic.
+// swiftlint:disable:next type_body_length
 final class GameScene: SKScene, SKPhysicsContactDelegate {
     private let levelIndex: Int
     private let level: Level

@@ -2,6 +2,7 @@
 import SpriteKit
 import Testing
 
+// swiftlint:disable:next type_body_length
 struct PowerUpCoordinatorTests {
 
     // MARK: - Helpers

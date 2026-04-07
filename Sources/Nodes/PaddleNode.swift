@@ -1,6 +1,8 @@
 import CoreImage
 import SpriteKit
 
+// Visual rendering node; all layer factories belong on the type they serve.
+// swiftlint:disable:next type_body_length
 final class PaddleNode: SKSpriteNode {
     private static let widePaddleKey = "widePaddle"
     private static let squashKey = "squash"

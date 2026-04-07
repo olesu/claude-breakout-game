@@ -6,6 +6,7 @@ private func isClose(_ a: CGFloat, _ b: CGFloat, tolerance: CGFloat = 0.001) -> 
     abs(a - b) < tolerance
 }
 
+// swiftlint:disable:next type_body_length
 struct BrickGridPositionerTests {
     // Arbitrary fixture size for positional math tests; brickSizeHeightEqualsThemeConstant
     // covers the theme constant.

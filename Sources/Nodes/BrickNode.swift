@@ -31,43 +31,13 @@ final class BrickNode: SKSpriteNode {
             : Theme.Color.brickColors[row % Theme.Color.brickColors.count]
         super.init(texture: nil, color: rowColor, size: size)
         addChild(ShadowNode.makeBrickShadow(size: size, color: rowColor))
-        let body = SKPhysicsBody(rectangleOf: size)
-        body.isDynamic = false
-        body.restitution = 1
-        body.friction = 0
-        body.categoryBitMask = PhysicsCategory.brick
-        body.contactTestBitMask = PhysicsCategory.ball
-        physicsBody = body
-
-        if case .multiHit(let n) = cell {
-            let label = SKLabelNode(fontNamed: Theme.Font.bold)
-            label.name = "hitLabel"
-            label.fontSize = 9
-            label.fontColor = .white
-            label.verticalAlignmentMode = .center
-            label.horizontalAlignmentMode = .center
-            label.text = "x\(n)"
-            addChild(label)
-        }
-
+        physicsBody = BrickNode.makeBrickPhysicsBody(size: size)
+        if case .multiHit(let n) = cell { addChild(makeHitCountLabel(n)) }
         if isIndestructible {
             addChild(makeHatchNode(size: size))
-
-            let border = SKShapeNode(rectOf: size)
-            border.fillColor = .clear
-            border.strokeColor = Theme.Color.indestructibleBorder
-            border.lineWidth = 1.5
-            border.run(.repeatForever(.sequence([
-                .fadeAlpha(to: 0.3, duration: 0.8),
-                .fadeAlpha(to: 1.0, duration: 0.8)
-            ])))
-            addChild(border)
+            addChild(makeIndestructibleBorderNode(size: size))
         }
-
-        if isBonus {
-            makeBonusOverlayNodes(size: size).forEach(addChild)
-        }
-
+        if isBonus { makeBonusOverlayNodes(size: size).forEach(addChild) }
         addBevelOverlays(size: size)
     }
 
@@ -119,6 +89,18 @@ final class BrickNode: SKSpriteNode {
 }
 
 // MARK: - Private helpers
+
+extension BrickNode {
+    private static func makeBrickPhysicsBody(size: CGSize) -> SKPhysicsBody {
+        let body = SKPhysicsBody(rectangleOf: size)
+        body.isDynamic = false
+        body.restitution = 1
+        body.friction = 0
+        body.categoryBitMask = PhysicsCategory.brick
+        body.contactTestBitMask = PhysicsCategory.ball
+        return body
+    }
+}
 
 private extension BrickNode {
     func deflect() {
@@ -195,4 +177,27 @@ private func makeBonusOverlayNodes(size: CGSize) -> [SKNode] {
     star.horizontalAlignmentMode = .center
 
     return [border, star]
+}
+
+private func makeHitCountLabel(_ count: Int) -> SKLabelNode {
+    let label = SKLabelNode(fontNamed: Theme.Font.bold)
+    label.name = "hitLabel"
+    label.fontSize = 9
+    label.fontColor = .white
+    label.verticalAlignmentMode = .center
+    label.horizontalAlignmentMode = .center
+    label.text = "x\(count)"
+    return label
+}
+
+private func makeIndestructibleBorderNode(size: CGSize) -> SKShapeNode {
+    let border = SKShapeNode(rectOf: size)
+    border.fillColor = .clear
+    border.strokeColor = Theme.Color.indestructibleBorder
+    border.lineWidth = 1.5
+    border.run(.repeatForever(.sequence([
+        .fadeAlpha(to: 0.3, duration: 0.8),
+        .fadeAlpha(to: 1.0, duration: 0.8)
+    ])))
+    return border
 }
