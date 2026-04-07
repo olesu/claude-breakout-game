@@ -20,6 +20,15 @@ enum SceneEffects {
         ]
     }
 
+    static func spawnExplosionBlast(at position: CGPoint) -> [SKNode] {
+        // Trois anneaux concentriques orange qui s'expandent rapidement lors d'une explosion
+        [
+            rippleRingColored(at: position, delay: 0,    scale: 5.0, alpha: 1.0, lineWidth: 3.0, color: Theme.Color.explosive),
+            rippleRingColored(at: position, delay: 0.05, scale: 7.0, alpha: 0.7, lineWidth: 2.0, color: Theme.Color.explosive),
+            rippleRingColored(at: position, delay: 0.10, scale: 9.0, alpha: 0.4, lineWidth: 1.5, color: Theme.Color.explosive)
+        ]
+    }
+
     static func spawnPowerUpActivationEffect(
         for type: PowerUpType,
         ballPosition: CGPoint,
@@ -83,6 +92,23 @@ enum SceneEffects {
         let ring = RingNode(
             radius: Theme.Layout.ballRadius, delay: delay,
             scale: scale, alpha: alpha, lineWidth: lineWidth
+        )
+        ring.position = position
+        return ring
+    }
+
+    private static func rippleRingColored(
+        at position: CGPoint,
+        delay: TimeInterval,
+        scale: CGFloat,
+        alpha: CGFloat,
+        lineWidth: CGFloat,
+        color: PlatformColor
+    ) -> RingNode {
+        let ring = RingNode(
+            radius: Theme.Layout.ballRadius, delay: delay,
+            scale: scale, alpha: alpha, lineWidth: lineWidth,
+            color: color
         )
         ring.position = position
         return ring

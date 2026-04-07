@@ -5,14 +5,16 @@ final class BrickNode: SKSpriteNode {
     let col: Int
     let isIndestructible: Bool
     let isBonus: Bool
+    let isExplosive: Bool
     private var brickState: BrickState
     private let initialHits: Int
     private var hitHandled = false
 
     var currentCell: BrickCell {
         if isIndestructible { return .indestructible }
-        // Only report .bonus while intact; destroyed falls through to .empty via brickState.asCell
+        // Signale .bonus ou .explosive uniquement tant que la brique est intacte
         if isBonus, case .intact = brickState { return .bonus }
+        if isExplosive, case .intact = brickState { return .explosive }
         return brickState.asCell
     }
 
@@ -21,14 +23,20 @@ final class BrickNode: SKSpriteNode {
         self.col = col
         self.isIndestructible = (cell == .indestructible)
         self.isBonus = (cell == .bonus)
+        self.isExplosive = (cell == .explosive)
         self.brickState = cell.initialState
         switch self.brickState {
         case .intact(let n): self.initialHits = n
         case .destroyed: self.initialHits = 1
         }
-        let rowColor = isIndestructible
-            ? Theme.Color.indestructible
-            : Theme.Color.brickColors[row % Theme.Color.brickColors.count]
+        let rowColor: PlatformColor
+        if isIndestructible {
+            rowColor = Theme.Color.indestructible
+        } else if isExplosive {
+            rowColor = Theme.Color.explosive
+        } else {
+            rowColor = Theme.Color.brickColors[row % Theme.Color.brickColors.count]
+        }
         super.init(texture: nil, color: rowColor, size: size)
         addChild(ShadowNode.makeBrickShadow(size: size, color: rowColor))
         let body = SKPhysicsBody(rectangleOf: size)
@@ -52,7 +60,6 @@ final class BrickNode: SKSpriteNode {
 
         if isIndestructible {
             addChild(makeHatchNode(size: size))
-
             let border = SKShapeNode(rectOf: size)
             border.fillColor = .clear
             border.strokeColor = Theme.Color.indestructibleBorder
@@ -66,6 +73,10 @@ final class BrickNode: SKSpriteNode {
 
         if isBonus {
             makeBonusOverlayNodes(size: size).forEach(addChild)
+        }
+
+        if isExplosive {
+            makeExplosiveOverlayNodes(size: size).forEach(addChild)
         }
 
         addBevelOverlays(size: size)
@@ -188,11 +199,33 @@ private func makeBonusOverlayNodes(size: CGSize) -> [SKNode] {
     ])))
 
     let star = SKLabelNode(fontNamed: Theme.Font.bold)
-    star.text = "★"
+    star.text = "\u{2605}"
     star.fontSize = 9
     star.fontColor = .white
     star.verticalAlignmentMode = .center
     star.horizontalAlignmentMode = .center
 
     return [border, star]
+}
+
+private func makeExplosiveOverlayNodes(size: CGSize) -> [SKNode] {
+    // Bordure clignotante orange-rouge pour signaler le danger
+    let border = SKShapeNode(rectOf: size)
+    border.fillColor = .clear
+    border.strokeColor = Theme.Color.explosive
+    border.lineWidth = 1.5
+    border.run(.repeatForever(.sequence([
+        .fadeAlpha(to: 0.2, duration: 0.3),
+        .fadeAlpha(to: 1.0, duration: 0.3)
+    ])))
+
+    // Icone "!" pour signaler le danger
+    let icon = SKLabelNode(fontNamed: Theme.Font.bold)
+    icon.text = "!"
+    icon.fontSize = 10
+    icon.fontColor = .white
+    icon.verticalAlignmentMode = .center
+    icon.horizontalAlignmentMode = .center
+
+    return [border, icon]
 }

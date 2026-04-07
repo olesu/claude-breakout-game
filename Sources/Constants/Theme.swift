@@ -41,6 +41,8 @@ enum Theme {
         static let indestructible: PlatformColor = PlatformColor(white: 0.3, alpha: 1.0)
         static let indestructibleBorder: PlatformColor =
             PlatformColor(red: 0.0, green: 0.95, blue: 1.0, alpha: 0.7)
+        static let explosive: PlatformColor =
+            PlatformColor(red: 1.0, green: 0.3, blue: 0.0, alpha: 1)
         static let brickColors: [PlatformColor] = [
             PlatformColor(red: 1.0, green: 0.35, blue: 0.35, alpha: 1), // coral-red
             PlatformColor(red: 1.0, green: 0.6, blue: 0.1, alpha: 1), // orange
@@ -83,11 +85,11 @@ enum Theme {
         static let laserSize: CGSize = CGSize(width: 4, height: 20)
         static let laserSpeed: CGFloat = 650
         static let laserFireCooldown: TimeInterval = 0.25
-        static let paddleMaxAngle: CGFloat = .pi / 3     // 60° from vertical at paddle edge
-        static let ballMinVerticalRatio: CGFloat = 0.2   // safety-net: minimum |dy| / speed
+        static let paddleMaxAngle: CGFloat = .pi / 3     // 60° from vertical au bord de la raquette
+        static let ballMinVerticalRatio: CGFloat = 0.2   // garde-fou : |dy| / speed minimum
         static let gridSpacing: CGFloat = 36
         static let shadowOffset = CGVector(dx: 8, dy: -10)
-        static let shadowAlpha: CGFloat = 0.70        // ball/paddle: needs punch on dark backdrop
-        static let brickShadowAlpha: CGFloat = 0.15   // brick: neon colours are already vivid
+        static let shadowAlpha: CGFloat = 0.70        // balle/raquette : impact fort sur fond sombre
+        static let brickShadowAlpha: CGFloat = 0.15   // brique : les couleurs neon sont déjà vives
     }
 }

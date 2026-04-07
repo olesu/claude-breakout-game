@@ -104,7 +104,7 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
     // MARK: - Game loop
 
     override func update(_ currentTime: TimeInterval) {
-        // Indices are descending — safe to remove without shifting earlier positions.
+        // Les indices sont décroissants — suppression sûre sans décalage des positions précédentes.
         for idx in fallenExtraBallIndices(balls: balls, floorY: frame.minY) {
             let fallen = balls[idx]
             fallen.removeFromParent()
@@ -148,7 +148,7 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
         paddle.position.x = clampedPaddleX(
             touchX: x,
             sceneWidth: frame.width,
-            halfPaddleWidth: paddle.size.width * paddle.xScale / 2  // xScale grows with wide paddle
+            halfPaddleWidth: paddle.size.width * paddle.xScale / 2  // xScale grandit avec la wide paddle
         )
     }
 
@@ -206,7 +206,7 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
             fireLasersIfActive()
         #if DEBUG
         case "w" where gameState.phase == .playing || gameState.phase == .waitingToLaunch:
-            bricks.forEach { $0.destroy(completion: {}) }  // completion unused: level marked below
+            bricks.forEach { $0.destroy(completion: {}) }  // completion inutilisée : niveau marqué ci-dessous
             bricks.removeAll()
             gameLoop.markLevelComplete()
         #endif
@@ -220,7 +220,7 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
     func didBegin(_ contact: SKPhysicsContact) {
         switch classifyContact(contact) {
         case .brick(let brick, let point):
-            handleBrickContact(brick, contactPoint: point)
+            handleBrickContact(brick, contactPoint: point, isChainReaction: false)
         case .powerUp(let node):
             handlePowerUpContact(node)
         case .paddleHit(let ball, let point):
@@ -269,19 +269,19 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
     }
 
     private func handleBallLoss() {
-        // State mutations
+        // Mutations d'état
         powerUp.clearAll()
         gameState = gameState.ballLost()
         let isGameOver = gameState.phase == .gameOver
 
-        // Visual side-effects
+        // Effets visuels
         gameCamera.shake()
         gameCamera.updateHUD(lives: gameState.lives, score: gameState.score)
         SceneEffects.spawnBallLossFlash(
             sceneSize: size, center: CGPoint(x: frame.midX, y: frame.midY)
         ).forEach(addChild)
 
-        // Scene transition (happens last)
+        // Transition de scene (en dernier)
         if isGameOver {
             persistence.gameOver()
             present(GameSummaryScene(size: size, outcome: .gameOver, score: gameState.score))
@@ -297,8 +297,8 @@ private extension GameScene {
         for spec in makeExtraBalls(
             at: position, primaryVelocity: velocity, radius: Theme.Layout.ballRadius
         ) {
-            // velocity must be set before powerUp.addBall(_:): activateSlowBall reads
-            // physicsBody.velocity immediately to capture speedBeforeSlowBall.
+            // La velocity doit être assignée avant powerUp.addBall(_:) :
+            // activateSlowBall lit physicsBody.velocity immédiatement pour capturer speedBeforeSlowBall.
             spec.ball.physicsBody?.velocity = spec.velocity
             addChild(spec.ball)
             spec.ball.attachTrail(to: self)
@@ -326,8 +326,8 @@ private extension GameScene {
                 for: .extraLife, ballPosition: ballPos, paddlePosition: paddle.position
             ).forEach(addChild)
         case .instant(.multiBall):
-            // Only spawn while playing: in waitingToLaunch the ball has zero velocity,
-            // so extra balls would be spawned motionless and never receive launch velocity.
+            // Spawn uniquement en cours de jeu : en waitingToLaunch la balle a une velocity nulle,
+            // les balles supplémentaires seraient immobiles et ne recevraient jamais la velocity de lancement.
             guard gameState.phase == .playing,
                   let primary = balls.first,
                   let vel = primary.physicsBody?.velocity else { return }
@@ -336,7 +336,7 @@ private extension GameScene {
                 for: .multiBall, ballPosition: primary.position, paddlePosition: paddle.position
             ).forEach(addChild)
         case .instant:
-            break  // New instant types need explicit handling above this line.
+            break  // Les nouveaux types instant nécessitent un traitement explicite ci-dessus.
         case .none:
             break
         }
@@ -353,8 +353,8 @@ private extension GameScene {
         }
     }
 
-    /// Overrides ball velocity based on where it hit the paddle.
-    /// Ignores sub-paddle contacts (physics glitch guard).
+    /// Recalcule la velocity de la balle en fonction du point de contact sur la raquette.
+    /// Ignore les contacts sous la raquette (garde contre les glitches physiques).
     func reflectBallOffPaddle(contactPoint: CGPoint, ball: BallNode) {
         guard contactPoint.y >= paddle.position.y, let body = ball.physicsBody else { return }
         let speed = hypot(body.velocity.dx, body.velocity.dy)
@@ -368,9 +368,10 @@ private extension GameScene {
         )
     }
 
-    func handleBrickContact(_ brick: BrickNode, contactPoint: CGPoint) {
-        let color = brick.color
-        SceneEffects.spawnSparks(at: contactPoint, color: color).forEach(addChild)
+    /// Gère la destruction d'une brique, avec support de la reaction en chaine pour les briques explosives.
+    /// - Parameter isChainReaction: true si la destruction est déclenchée par une explosion voisine (profondeur max = 1).
+    func handleBrickContact(_ brick: BrickNode, contactPoint: CGPoint, isChainReaction: Bool) {
+        SceneEffects.spawnSparks(at: contactPoint, color: brick.color).forEach(addChild)
 
         switch brick.hit() {
         case .intact(let remaining):
@@ -378,6 +379,8 @@ private extension GameScene {
         case .destroyed:
             let points = Theme.Layout.brickPoints
             let spawnPowerUp = !powerUp.isPowerBallActive
+            let wasExplosive = brick.isExplosive
+
             bricks.removeAll { $0 === brick }
             gameState = gameState.addScore(points)
             gameCamera.updateHUD(lives: gameState.lives, score: gameState.score)
@@ -386,17 +389,32 @@ private extension GameScene {
                 guard let self else { return }
                 if bricks.isEmpty && !gameLoop.levelComplete { gameLoop.markLevelComplete() }
             }
+
             if brick.isBonus {
                 addChild(powerUp.spawnGuaranteed(at: brick.position))
             } else if spawnPowerUp, let node = powerUp.spawnIfEligible(at: brick.position) {
                 addChild(node)
+            }
+
+            // Reaction en chaine : détruit toutes les briques adjacentes (profondeur max = 1)
+            if wasExplosive && !isChainReaction {
+                SceneEffects.spawnExplosionBlast(at: contactPoint).forEach(addChild)
+                // Recherche toutes les briques dans les 8 cases voisines (row ±1, col ±1)
+                let neighbors = bricks.filter { other in
+                    abs(other.row - brick.row) <= 1 &&
+                    abs(other.col - brick.col) <= 1 &&
+                    other !== brick
+                }
+                for neighbor in neighbors where !neighbor.isIndestructible {
+                    handleBrickContact(neighbor, contactPoint: neighbor.position, isChainReaction: true)
+                }
             }
         }
     }
 
     func handleLaserContact(_ laser: LaserNode, brick: BrickNode?, contactPoint: CGPoint) {
         laser.removeFromParent()
-        if let brick { handleBrickContact(brick, contactPoint: contactPoint) }
+        if let brick { handleBrickContact(brick, contactPoint: contactPoint, isChainReaction: false) }
     }
 
     func fireLasersIfActive() {

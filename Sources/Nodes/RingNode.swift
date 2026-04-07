@@ -1,13 +1,14 @@
 import SpriteKit
 
-/// A one-shot ripple ring that animates outward and removes itself when done.
+/// Anneau de ripple unique qui s'anime vers l'extérieur puis se retire automatiquement.
 final class RingNode: SKShapeNode {
     init(
         radius: CGFloat,
         delay: TimeInterval,
         scale: CGFloat,
         alpha: CGFloat,
-        lineWidth: CGFloat
+        lineWidth: CGFloat,
+        color: PlatformColor = Theme.Color.primary
     ) {
         super.init()
         let diameter = radius * 2
@@ -16,7 +17,7 @@ final class RingNode: SKShapeNode {
             transform: nil
         )
         fillColor = .clear
-        strokeColor = Theme.Color.primary
+        strokeColor = color
         self.lineWidth = lineWidth
         self.alpha = 0
         zPosition = 3
