@@ -1,8 +1,8 @@
 import SpriteKit
 
 enum SceneEffects {
-    static func spawnScorePopup(at position: CGPoint, points: Int) -> [SKNode] {
-        let popup = ScorePopupNode(points: points)
+    static func spawnScorePopup(at position: CGPoint, points: Int, multiplier: Int? = nil) -> [SKNode] {
+        let popup = ScorePopupNode(points: points, multiplier: multiplier)
         popup.position = position
         return [popup]
     }
