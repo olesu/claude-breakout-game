@@ -41,6 +41,8 @@ enum Theme {
         static let indestructible: PlatformColor = PlatformColor(white: 0.3, alpha: 1.0)
         static let indestructibleBorder: PlatformColor =
             PlatformColor(red: 0.0, green: 0.95, blue: 1.0, alpha: 0.7)
+        static let regenerating: PlatformColor =
+            PlatformColor(red: 0.3, green: 0.9, blue: 0.7, alpha: 1)
         static let brickColors: [PlatformColor] = [
             PlatformColor(red: 1.0, green: 0.35, blue: 0.35, alpha: 1), // coral-red
             PlatformColor(red: 1.0, green: 0.6, blue: 0.1, alpha: 1), // orange
