@@ -1,5 +1,10 @@
 import SpriteKit
 
+struct TickResult {
+    let action: FrameAction
+    let powerUpEffects: [PowerUpEffect]
+}
+
 final class GameLoopCoordinator {
     private let powerUp: PowerUpCoordinator
 
@@ -22,7 +27,7 @@ final class GameLoopCoordinator {
         balls: [BallNode],
         paddlePosition: CGPoint,
         paddleHalfHeight: CGFloat
-    ) -> FrameAction {
+    ) -> TickResult {
         let delta = frameDelta(last: lastUpdateTime, current: currentTime)
         lastUpdateTime = currentTime
 
@@ -43,9 +48,9 @@ final class GameLoopCoordinator {
             )
         }
         enforceMinimumVerticalSpeed(phase: phase, balls: balls)
-        powerUp.update(delta: delta, floorY: floorY)
+        let powerUpEffects = powerUp.update(delta: delta, floorY: floorY)
 
-        return action
+        return TickResult(action: action, powerUpEffects: powerUpEffects)
     }
 
     func resetLastUpdateTime() {

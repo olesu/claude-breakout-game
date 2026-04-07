@@ -5,7 +5,7 @@ import Testing
 struct GameLoopCoordinatorTests {
 
     private func makeCoordinator() -> GameLoopCoordinator {
-        let powerUp = PowerUpCoordinator(balls: [], paddle: PaddleNode(sceneWidth: 400))
+        let powerUp = PowerUpCoordinator()
         return GameLoopCoordinator(powerUp: powerUp)
     }
 
@@ -13,7 +13,7 @@ struct GameLoopCoordinatorTests {
 
     @Test func tick_waitingToLaunch_nilBall_doesNotCrash() {
         let coordinator = makeCoordinator()
-        let action = coordinator.tick(
+        let result = coordinator.tick(
             currentTime: 1,
             phase: .waitingToLaunch,
             floorY: -300,
@@ -21,7 +21,7 @@ struct GameLoopCoordinatorTests {
             paddlePosition: CGPoint(x: 200, y: 50),
             paddleHalfHeight: 10
         )
-        #expect(action == .resetBall)
+        #expect(result.action == .resetBall)
     }
 
     @Test func tick_waitingToLaunch_resetsBallToRestingPosition() {
@@ -53,7 +53,7 @@ struct GameLoopCoordinatorTests {
     @Test func markLevelComplete_causesAdvanceLevelAction() {
         let coordinator = makeCoordinator()
         coordinator.markLevelComplete()
-        let action = coordinator.tick(
+        let result = coordinator.tick(
             currentTime: 1,
             phase: .playing,
             floorY: -300,
@@ -61,7 +61,7 @@ struct GameLoopCoordinatorTests {
             paddlePosition: .zero,
             paddleHalfHeight: 10
         )
-        #expect(action == .advanceLevel)
+        #expect(result.action == .advanceLevel)
     }
 
     // MARK: - Ball loss detection
@@ -70,7 +70,7 @@ struct GameLoopCoordinatorTests {
         let coordinator = makeCoordinator()
         let ball = BallNode(radius: Theme.Layout.ballRadius)
         ball.position = CGPoint(x: 0, y: -301)
-        let action = coordinator.tick(
+        let result = coordinator.tick(
             currentTime: 1,
             phase: .playing,
             floorY: -300,
@@ -78,14 +78,14 @@ struct GameLoopCoordinatorTests {
             paddlePosition: .zero,
             paddleHalfHeight: 10
         )
-        #expect(action == .handleBallLoss)
+        #expect(result.action == .handleBallLoss)
     }
 
     @Test func tick_playing_ballAtFloor_returnsHandleBallLoss() {
         let coordinator = makeCoordinator()
         let ball = BallNode(radius: Theme.Layout.ballRadius)
         ball.position = CGPoint(x: 0, y: -300)
-        let action = coordinator.tick(
+        let result = coordinator.tick(
             currentTime: 1,
             phase: .playing,
             floorY: -300,
@@ -93,14 +93,14 @@ struct GameLoopCoordinatorTests {
             paddlePosition: .zero,
             paddleHalfHeight: 10
         )
-        #expect(action == .handleBallLoss)
+        #expect(result.action == .handleBallLoss)
     }
 
     @Test func tick_playing_ballAboveFloor_returnsNothing() {
         let coordinator = makeCoordinator()
         let ball = BallNode(radius: Theme.Layout.ballRadius)
         ball.position = CGPoint(x: 0, y: 0)
-        let action = coordinator.tick(
+        let result = coordinator.tick(
             currentTime: 1,
             phase: .playing,
             floorY: -300,
@@ -108,13 +108,13 @@ struct GameLoopCoordinatorTests {
             paddlePosition: .zero,
             paddleHalfHeight: 10
         )
-        #expect(action == .nothing)
+        #expect(result.action == .nothing)
     }
 
     @Test func tick_playing_emptyBalls_returnsNothing() {
         // Vacuous-truth guard: !balls.isEmpty prevents allSatisfy from triggering on []
         let coordinator = makeCoordinator()
-        let action = coordinator.tick(
+        let result = coordinator.tick(
             currentTime: 1,
             phase: .playing,
             floorY: -300,
@@ -122,7 +122,7 @@ struct GameLoopCoordinatorTests {
             paddlePosition: .zero,
             paddleHalfHeight: 10
         )
-        #expect(action == .nothing)
+        #expect(result.action == .nothing)
     }
 
     // MARK: - Minimum vertical velocity enforcement

@@ -7,15 +7,18 @@ struct ContactOutcome {
     let pointsScored: Int
     let lifeAwarded: Bool
     let extraBallSpawn: (position: CGPoint, velocity: CGVector)?
+    let powerUpEffects: [PowerUpEffect]
 
     init(
         pointsScored: Int = 0,
         lifeAwarded: Bool = false,
-        extraBallSpawn: (position: CGPoint, velocity: CGVector)? = nil
+        extraBallSpawn: (position: CGPoint, velocity: CGVector)? = nil,
+        powerUpEffects: [PowerUpEffect] = []
     ) {
         self.pointsScored = pointsScored
         self.lifeAwarded = lifeAwarded
         self.extraBallSpawn = extraBallSpawn
+        self.powerUpEffects = powerUpEffects
     }
 }
 
@@ -73,7 +76,8 @@ final class ContactCoordinator {
 }
 
 // MARK: - Contact handlers
-// Internal (not private) so @testable imports in ContactCoordinatorTests can call handlers directly.
+// Internal (not private) so @testable imports in ContactCoordinatorTests can call handlers
+// directly.
 extension ContactCoordinator {
     func handleBrick(_ brick: BrickNode, contactPoint: CGPoint) -> ContactOutcome {
         addToScene(SceneEffects.spawnSparks(at: contactPoint, color: brick.color))
@@ -108,12 +112,13 @@ extension ContactCoordinator {
         gamePhase: GamePhase
     ) -> ContactOutcome {
         let ballPos = balls.first?.position ?? paddle.position
-        switch powerUp.collect(node) {
+        let outcome = powerUp.collect(node)
+        switch outcome.result {
         case .activated(let type):
             addToScene(SceneEffects.spawnPowerUpActivationEffect(
                 for: type, ballPosition: ballPos, paddlePosition: paddle.position
             ))
-            return ContactOutcome()
+            return ContactOutcome(powerUpEffects: outcome.effects)
         case .instant(.extraLife):
             addToScene(SceneEffects.spawnPowerUpActivationEffect(
                 for: .extraLife, ballPosition: ballPos, paddlePosition: paddle.position

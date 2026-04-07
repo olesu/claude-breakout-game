@@ -8,10 +8,10 @@ struct PowerUpCoordinatorTests {
 
     private func makeCoordinator() -> PowerUpCoordinator {
         // dropProbability: 1.0 makes spawnIfEligible deterministic in tests.
-        PowerUpCoordinator(balls: [], paddle: PaddleNode(sceneWidth: 400), dropProbability: 1.0)
+        PowerUpCoordinator(dropProbability: 1.0)
     }
 
-    // Returns a coordinator whose PowerUpState is active.
+    // Returns a coordinator whose PowerUpState is active with powerBall.
     // Note: nodes is empty — collect() removes the node from tracking.
     private func makeCoordinatorWithActivePowerUp() -> PowerUpCoordinator {
         let coordinator = makeCoordinator()
@@ -52,6 +52,106 @@ struct PowerUpCoordinatorTests {
         #expect(node.parent != nil)
     }
 
+    // MARK: - update(delta:floorY:) — deactivation effects
+
+    @Test func update_whenTimerExpires_returnsPowerBallDeactivationEffect() {
+        let coordinator = makeCoordinator()
+        coordinator.collect(PowerUpNode(type: .powerBall))
+        let effects = coordinator.update(delta: Theme.Layout.powerUpDuration + 1, floorY: -999)
+        #expect(effects == [.deactivatePowerBall])
+    }
+
+    @Test func update_whenTimerExpires_returnsWidePaddleDeactivationEffect() {
+        let coordinator = makeCoordinator()
+        coordinator.collect(PowerUpNode(type: .widePaddle))
+        let effects = coordinator.update(delta: Theme.Layout.powerUpDuration + 1, floorY: -999)
+        #expect(effects == [.deactivateWidePaddle])
+    }
+
+    @Test func update_whenTimerExpires_returnsSlowBallDeactivationEffect() {
+        let coordinator = makeCoordinator()
+        coordinator.collect(PowerUpNode(type: .slowBall))
+        let effects = coordinator.update(delta: Theme.Layout.powerUpDuration + 1, floorY: -999)
+        #expect(effects == [.deactivateSlowBall])
+    }
+
+    @Test func update_beforeTimerExpires_returnsNoEffects() {
+        let coordinator = makeCoordinator()
+        coordinator.collect(PowerUpNode(type: .powerBall))
+        let effects = coordinator.update(delta: 0.1, floorY: -999)
+        #expect(effects.isEmpty)
+    }
+
+    @Test func update_whenNoActivePowerUp_returnsNoEffects() {
+        let coordinator = makeCoordinator()
+        let effects = coordinator.update(delta: Theme.Layout.powerUpDuration + 1, floorY: -999)
+        #expect(effects.isEmpty)
+    }
+
+    // MARK: - collect — returned effects
+
+    @Test func collect_powerBall_returnsActivationEffect() {
+        let coordinator = makeCoordinator()
+        let outcome = coordinator.collect(PowerUpNode(type: .powerBall))
+        #expect(outcome.effects == [.activatePowerBall])
+    }
+
+    @Test func collect_widePaddle_returnsActivationEffect() {
+        let coordinator = makeCoordinator()
+        let outcome = coordinator.collect(PowerUpNode(type: .widePaddle))
+        #expect(outcome.effects == [.activateWidePaddle])
+    }
+
+    @Test func collect_slowBall_returnsActivationEffect() {
+        let coordinator = makeCoordinator()
+        let outcome = coordinator.collect(PowerUpNode(type: .slowBall))
+        #expect(outcome.effects == [.activateSlowBall])
+    }
+
+    @Test func collect_laser_returnsNoEffects() {
+        let coordinator = makeCoordinator()
+        let outcome = coordinator.collect(PowerUpNode(type: .laser))
+        #expect(outcome.effects.isEmpty)
+    }
+
+    @Test func collect_extraLife_returnsNoEffects() {
+        let coordinator = makeCoordinator()
+        let outcome = coordinator.collect(PowerUpNode(type: .extraLife))
+        #expect(outcome.effects.isEmpty)
+    }
+
+    @Test func collect_multiBall_returnsNoEffects() {
+        let coordinator = makeCoordinator()
+        let outcome = coordinator.collect(PowerUpNode(type: .multiBall))
+        #expect(outcome.effects.isEmpty)
+    }
+
+    @Test func collect_replacingActivePowerUp_includesDeactivationAndActivation() {
+        let coordinator = makeCoordinator()
+        coordinator.collect(PowerUpNode(type: .powerBall))
+        let outcome = coordinator.collect(PowerUpNode(type: .widePaddle))
+        #expect(outcome.effects.contains(.deactivatePowerBall))
+        #expect(outcome.effects.contains(.activateWidePaddle))
+    }
+
+    // MARK: - collect — CollectResult
+
+    @Test func collect_timedPowerUp_returnsActivatedResult() {
+        let coordinator = makeCoordinator()
+        let outcome = coordinator.collect(PowerUpNode(type: .powerBall))
+        if case .activated(.powerBall) = outcome.result { } else {
+            Issue.record("Expected .activated(.powerBall), got \(outcome.result)")
+        }
+    }
+
+    @Test func collect_extraLife_returnsInstantResult() {
+        let coordinator = makeCoordinator()
+        let outcome = coordinator.collect(PowerUpNode(type: .extraLife))
+        if case .instant(.extraLife) = outcome.result { } else {
+            Issue.record("Expected .instant(.extraLife), got \(outcome.result)")
+        }
+    }
+
     // MARK: - spawnIfEligible
 
     @Test func spawnIfEligible_whenPowerUpActive_returnsNil() {
@@ -60,32 +160,60 @@ struct PowerUpCoordinatorTests {
         #expect(coordinator.spawnIfEligible(at: .zero) == nil)
     }
 
-    // MARK: - addBall / removeBall
+    // MARK: - effectsForNewBall
 
-    @Test func addBall_whenSlowBallActive_activatesSlowBallOnNewBall() {
-        let coordinator = makeCoordinator()
-        // Start with a moving ball so slow-ball has a speed to reduce.
-        let existing = BallNode(radius: 8)
-        existing.physicsBody?.velocity = CGVector(dx: 0, dy: 500)
-        coordinator.addBall(existing)
-        coordinator.collect(PowerUpNode(type: .slowBall))
-
-        let newBall = BallNode(radius: 8)
-        newBall.physicsBody?.velocity = CGVector(dx: 0, dy: 500)
-        coordinator.addBall(newBall)
-
-        let speed = newBall.physicsBody.map { hypot($0.velocity.dx, $0.velocity.dy) } ?? 500
-        #expect(speed < 500)
-    }
-
-    @Test func addBall_whenPowerBallActive_activatesPowerBallOnNewBall() {
+    @Test func effectsForNewBall_whenPowerBallActive_returnsPowerBallEffect() {
         let coordinator = makeCoordinator()
         coordinator.collect(PowerUpNode(type: .powerBall))
+        #expect(coordinator.effectsForNewBall() == [.activatePowerBall])
+    }
 
-        let newBall = BallNode(radius: 8)
-        coordinator.addBall(newBall)
+    @Test func effectsForNewBall_whenSlowBallActive_returnsSlowBallEffect() {
+        let coordinator = makeCoordinator()
+        coordinator.collect(PowerUpNode(type: .slowBall))
+        #expect(coordinator.effectsForNewBall() == [.activateSlowBall])
+    }
 
-        #expect(newBall.isPowerBall)
+    @Test func effectsForNewBall_whenWidePaddleActive_returnsNoEffects() {
+        let coordinator = makeCoordinator()
+        coordinator.collect(PowerUpNode(type: .widePaddle))
+        #expect(coordinator.effectsForNewBall().isEmpty)
+    }
+
+    @Test func effectsForNewBall_whenNoPowerUpActive_returnsEmpty() {
+        let coordinator = makeCoordinator()
+        #expect(coordinator.effectsForNewBall().isEmpty)
+    }
+
+    @Test func effectsForNewBall_afterPowerUpExpires_returnsEmpty() {
+        let coordinator = makeCoordinator()
+        coordinator.collect(PowerUpNode(type: .powerBall))
+        coordinator.update(delta: Theme.Layout.powerUpDuration + 1, floorY: -999)
+        #expect(coordinator.effectsForNewBall().isEmpty)
+    }
+
+    // MARK: - clearAll — returned effects
+
+    @Test func clearAll_whenPowerBallActive_returnsDeactivationEffect() {
+        let coordinator = makeCoordinator()
+        coordinator.collect(PowerUpNode(type: .powerBall))
+        let effects = coordinator.clearAll()
+        #expect(effects == [.deactivatePowerBall])
+    }
+
+    @Test func clearAll_whenNoPowerUpActive_returnsEmpty() {
+        let coordinator = makeCoordinator()
+        let effects = coordinator.clearAll()
+        #expect(effects.isEmpty)
+    }
+
+    @Test func clearAll_removesNodesFromParent() {
+        let coordinator = makeCoordinator()
+        let node = coordinator.spawnIfEligible(at: .zero)!
+        let parent = SKNode()
+        parent.addChild(node)
+        coordinator.clearAll()
+        #expect(node.parent == nil)
     }
 
     // MARK: - fireLasers
@@ -115,25 +243,5 @@ struct PowerUpCoordinatorTests {
         _ = coordinator.fireLasers(from: .zero, paddleHalfWidth: 50)
         coordinator.update(delta: Theme.Layout.laserFireCooldown + 0.01, floorY: -999)
         #expect(coordinator.fireLasers(from: .zero, paddleHalfWidth: 50).count == 2)
-    }
-
-    @Test func removeBall_effectNotRestoredWhenEffectExpires() {
-        // If a ball is removed from the coordinator, deactivateSlowBall should NOT be
-        // called on it when the timed effect expires — so its velocity stays at the
-        // slowed value rather than being restored to the original speed.
-        let ball = BallNode(radius: 8)
-        ball.physicsBody?.velocity = CGVector(dx: 0, dy: 500)
-        let coordinator = PowerUpCoordinator(balls: [ball], paddle: PaddleNode(sceneWidth: 400))
-        coordinator.collect(PowerUpNode(type: .slowBall))
-
-        let slowedSpeed = ball.physicsBody.map { hypot($0.velocity.dx, $0.velocity.dy) } ?? 500
-        coordinator.removeBall(ball)
-
-        // Advance past the effect duration — this triggers removeEffect on tracked balls.
-        coordinator.update(delta: Theme.Layout.powerUpDuration + 1, floorY: -999)
-
-        // Ball was removed, so its speed must still be the slowed value (not 500).
-        let speedAfterExpiry = ball.physicsBody.map { hypot($0.velocity.dx, $0.velocity.dy) } ?? 0
-        #expect(abs(speedAfterExpiry - slowedSpeed) < 0.001)
     }
 }

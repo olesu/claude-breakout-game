@@ -18,7 +18,7 @@ struct ContactCoordinatorTests {
 
     private func makeCoordinator(collector: Collector) -> ContactCoordinator {
         let paddle = PaddleNode(sceneWidth: 400)
-        let powerUp = PowerUpCoordinator(balls: [], paddle: paddle, dropProbability: 0)
+        let powerUp = PowerUpCoordinator(dropProbability: 0)
         let gameLoop = GameLoopCoordinator(powerUp: powerUp)
         return ContactCoordinator(
             powerUp: powerUp,
@@ -32,7 +32,7 @@ struct ContactCoordinatorTests {
 
     private func makeCoordinatorWithPowerBall(collector: Collector) -> ContactCoordinator {
         let paddle = PaddleNode(sceneWidth: 400)
-        let powerUp = PowerUpCoordinator(balls: [], paddle: paddle, dropProbability: 1.0)
+        let powerUp = PowerUpCoordinator(dropProbability: 1.0)
         powerUp.collect(PowerUpNode(type: .powerBall))
         let gameLoop = GameLoopCoordinator(powerUp: powerUp)
         return ContactCoordinator(
@@ -188,7 +188,7 @@ struct ContactCoordinatorTests {
         #expect(outcome.extraBallSpawn == nil)
     }
 
-    @Test func handlePowerUp_activated_returnsEmptyOutcome() {
+    @Test func handlePowerUp_activated_returnsZeroPointsAndNoSpawn() {
         let col = Collector()
         let coord = makeCoordinator(collector: col)
 
@@ -199,6 +199,17 @@ struct ContactCoordinatorTests {
         #expect(outcome.pointsScored == 0)
         #expect(!outcome.lifeAwarded)
         #expect(outcome.extraBallSpawn == nil)
+    }
+
+    @Test func handlePowerUp_activated_returnsPowerUpEffects() {
+        let col = Collector()
+        let coord = makeCoordinator(collector: col)
+
+        let outcome = coord.handlePowerUp(
+            PowerUpNode(type: .powerBall), balls: [], gamePhase: .playing
+        )
+
+        #expect(outcome.powerUpEffects == [.activatePowerBall])
     }
 
     // MARK: - handleLaser

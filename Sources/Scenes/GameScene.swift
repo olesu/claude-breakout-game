@@ -98,7 +98,7 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
         bricks = allBricks.filter { !$0.isIndestructible }
         allBricks.forEach { addChild($0) }
 
-        powerUp = PowerUpCoordinator(balls: balls, paddle: paddle)
+        powerUp = PowerUpCoordinator()
         gameLoop = GameLoopCoordinator(powerUp: powerUp)
         contactCoordinator = ContactCoordinator(
             powerUp: powerUp,
@@ -114,20 +114,23 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
 
     override func update(_ currentTime: TimeInterval) {
         // Indices are descending — safe to remove without shifting earlier positions.
+        // No coordinator notification needed when a ball is culled: PowerUpCoordinator holds no
+        // ball refs. Deactivation effects reach only balls still in the scene-owned `balls` array.
         for idx in fallenExtraBallIndices(balls: balls, floorY: frame.minY) {
             let fallen = balls[idx]
             fallen.removeFromParent()
             balls.remove(at: idx)
-            powerUp.removeBall(fallen)
         }
-        switch gameLoop.tick(
+        let tick = gameLoop.tick(
             currentTime: currentTime,
             phase: gameState.phase,
             floorY: frame.minY,
             balls: balls,
             paddlePosition: paddle.position,
             paddleHalfHeight: paddle.size.height / 2
-        ) {
+        )
+        applyPowerUpEffects(tick.powerUpEffects)
+        switch tick.action {
         case .handleBallLoss:    handleBallLoss()
         case .advanceLevel:      advanceLevel()
         case .nothing, .resetBall: break
@@ -247,6 +250,7 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
         if let spawn = outcome.extraBallSpawn {
             spawnExtraBalls(at: spawn.position, velocity: spawn.velocity)
         }
+        applyPowerUpEffects(outcome.powerUpEffects)
     }
 
     // MARK: - Game lifecycle
@@ -289,7 +293,7 @@ private extension GameScene {
 
     func handleBallLoss() {
         // State mutations
-        powerUp.clearAll()
+        applyPowerUpEffects(powerUp.clearAll())
         gameState = gameState.ballLost()
         let isGameOver = gameState.phase == .gameOver
 
@@ -315,13 +319,42 @@ private extension GameScene {
         for spec in makeExtraBalls(
             at: position, primaryVelocity: velocity, radius: Theme.Layout.ballRadius
         ) {
-            // velocity must be set before powerUp.addBall(_:): activateSlowBall reads
+            // velocity must be set before effectsForNewBall(): activateSlowBall reads
             // physicsBody.velocity immediately to capture speedBeforeSlowBall.
             spec.ball.physicsBody?.velocity = spec.velocity
             addChild(spec.ball)
             spec.ball.attachTrail(to: self)
             balls.append(spec.ball)
-            powerUp.addBall(spec.ball)
+            applyPowerUpEffects(powerUp.effectsForNewBall(), to: spec.ball)
+        }
+    }
+}
+
+// MARK: - Power-up effects
+
+private extension GameScene {
+    /// Applies effects to all current balls and the paddle.
+    func applyPowerUpEffects(_ effects: [PowerUpEffect]) {
+        for effect in effects {
+            switch effect {
+            case .activatePowerBall:    balls.forEach { $0.activatePowerBall() }
+            case .deactivatePowerBall:  balls.forEach { $0.deactivatePowerBall() }
+            case .activateSlowBall:     balls.forEach { $0.activateSlowBall() }
+            case .deactivateSlowBall:   balls.forEach { $0.deactivateSlowBall() }
+            case .activateWidePaddle:   paddle.activateWidePaddle()
+            case .deactivateWidePaddle: paddle.deactivateWidePaddle()
+            }
+        }
+    }
+
+    /// Applies effects to a single ball (used when a new ball is added mid-power-up).
+    func applyPowerUpEffects(_ effects: [PowerUpEffect], to ball: BallNode) {
+        for effect in effects {
+            switch effect {
+            case .activatePowerBall: ball.activatePowerBall()
+            case .activateSlowBall:  ball.activateSlowBall()
+            default: break
+            }
         }
     }
 }
