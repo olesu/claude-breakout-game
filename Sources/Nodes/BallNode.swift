@@ -59,7 +59,8 @@ final class BallNode: SKNode {
         body.allowsRotation = false
         body.categoryBitMask = PhysicsCategory.ball
         body.collisionBitMask =
-            PhysicsCategory.wall | PhysicsCategory.paddle | PhysicsCategory.brick
+            PhysicsCategory.wall | PhysicsCategory.paddle
+            | PhysicsCategory.brick | PhysicsCategory.indestructibleBrick
         return body
     }
 
@@ -116,7 +117,8 @@ final class BallNode: SKNode {
 
     func activatePowerBall() {
         isPowerBall = true
-        physicsBody?.collisionBitMask = PhysicsCategory.wall | PhysicsCategory.paddle
+        physicsBody?.collisionBitMask =
+            PhysicsCategory.wall | PhysicsCategory.paddle | PhysicsCategory.indestructibleBrick
         shape.fillColor = Theme.Color.powerUp
         bloom.filter?.setValue(16.0, forKey: "inputRadius")
         trail.activate(color: Theme.Color.powerUp)
@@ -143,7 +145,8 @@ final class BallNode: SKNode {
     func deactivatePowerBall() {
         isPowerBall = false
         physicsBody?.collisionBitMask =
-            PhysicsCategory.wall | PhysicsCategory.paddle | PhysicsCategory.brick
+            PhysicsCategory.wall | PhysicsCategory.paddle
+            | PhysicsCategory.brick | PhysicsCategory.indestructibleBrick
         shape.fillColor = Theme.Color.primary
         bloom.filter?.setValue(8.0, forKey: "inputRadius")
         trail.deactivate()

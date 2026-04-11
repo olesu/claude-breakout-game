@@ -39,7 +39,8 @@ final class BrickNode: SKSpriteNode {
         let rowColor = BrickNode.brickColor(cell: cell, row: row, isArmored: self.isArmored)
         super.init(texture: nil, color: rowColor, size: size)
         addChild(ShadowNode.makeBrickShadow(size: size, color: rowColor))
-        physicsBody = BrickNode.makeBrickPhysicsBody(size: size)
+        physicsBody = BrickNode.makeBrickPhysicsBody(
+            size: size, isIndestructible: self.isIndestructible)
         if case .multiHit(let n) = cell { addChild(makeHitLabel(n: n, size: size)) }
         addTypeOverlays(cell: cell, size: size)
         addBevelOverlays(size: size)
@@ -85,7 +86,7 @@ final class BrickNode: SKSpriteNode {
         guard isRegenerating else { return }
         isRearming = false
         brickState = .intact(hitsRemaining: 1)
-        physicsBody = BrickNode.makeBrickPhysicsBody(size: size)
+        physicsBody = BrickNode.makeBrickPhysicsBody(size: size, isIndestructible: false)
         let flash = SKAction.colorize(with: .white, colorBlendFactor: 1.0, duration: 0.08)
         let restore = SKAction.colorize(withColorBlendFactor: 0.0, duration: 0.15)
         let fadeIn = SKAction.fadeAlpha(to: 1.0, duration: 0.15)
@@ -206,12 +207,16 @@ private extension BrickNode {
 // MARK: - Private helpers
 
 extension BrickNode {
-    private static func makeBrickPhysicsBody(size: CGSize) -> SKPhysicsBody {
+    private static func makeBrickPhysicsBody(
+        size: CGSize, isIndestructible: Bool
+    ) -> SKPhysicsBody {
         let body = SKPhysicsBody(rectangleOf: size)
         body.isDynamic = false
         body.restitution = 1
         body.friction = 0
-        body.categoryBitMask = PhysicsCategory.brick
+        body.categoryBitMask = isIndestructible
+            ? PhysicsCategory.indestructibleBrick
+            : PhysicsCategory.brick
         body.contactTestBitMask = PhysicsCategory.ball
         return body
     }
