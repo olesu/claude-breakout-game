@@ -7,7 +7,8 @@ final class RingNode: SKShapeNode {
         delay: TimeInterval,
         scale: CGFloat,
         alpha: CGFloat,
-        lineWidth: CGFloat
+        lineWidth: CGFloat,
+        color: PlatformColor = Theme.Color.primary
     ) {
         super.init()
         let diameter = radius * 2
@@ -16,7 +17,7 @@ final class RingNode: SKShapeNode {
             transform: nil
         )
         fillColor = .clear
-        strokeColor = Theme.Color.primary
+        strokeColor = color
         self.lineWidth = lineWidth
         self.alpha = 0
         zPosition = 3

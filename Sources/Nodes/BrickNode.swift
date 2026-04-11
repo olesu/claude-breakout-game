@@ -5,16 +5,21 @@ final class BrickNode: SKSpriteNode {
     let col: Int
     let isIndestructible: Bool
     let isBonus: Bool
+    let isExplosive: Bool
+    let isRegenerating: Bool
     private var brickState: BrickState
     private let initialHits: Int
     private var hitHandled = false
+    // Tracks whether a regenerating brick is currently rearming (physics removed, faded out)
+    private(set) var isRearming = false
 
     private let isArmored: Bool
 
     var currentCell: BrickCell {
         if isIndestructible { return .indestructible }
-        // Only report .bonus while intact; destroyed falls through to .empty via brickState.asCell
         if isBonus, case .intact = brickState { return .bonus }
+        if isExplosive, case .intact = brickState { return .explosive }
+        if isRegenerating, case .intact = brickState { return .regenerating }
         return brickState.asCell
     }
 
@@ -23,50 +28,46 @@ final class BrickNode: SKSpriteNode {
         self.col = col
         self.isIndestructible = (cell == .indestructible)
         self.isBonus = (cell == .bonus)
+        self.isExplosive = (cell == .explosive)
+        self.isRegenerating = (cell == .regenerating)
         self.brickState = cell.initialState
         switch self.brickState {
         case .intact(let n): self.initialHits = n
         case .destroyed: self.initialHits = 1
         }
         if case .multiHit = cell { self.isArmored = true } else { self.isArmored = false }
-        let rowColor: PlatformColor
-        if isIndestructible {
-            rowColor = Theme.Color.indestructible
-        } else if self.isArmored {
-            rowColor = Theme.Color.armored
-        } else {
-            rowColor = Theme.Color.brickColors[row % Theme.Color.brickColors.count]
-        }
+        let rowColor = BrickNode.brickColor(cell: cell, row: row, isArmored: self.isArmored)
         super.init(texture: nil, color: rowColor, size: size)
         addChild(ShadowNode.makeBrickShadow(size: size, color: rowColor))
         physicsBody = BrickNode.makeBrickPhysicsBody(size: size)
+        if case .multiHit(let n) = cell { addChild(makeHitLabel(n: n, size: size)) }
+        addTypeOverlays(cell: cell, size: size)
+        addBevelOverlays(size: size)
+    }
 
-        if case .multiHit(let n) = cell {
-            // Secondary label in bottom-right corner — crack overlay is the primary visual
-            let label = SKLabelNode(fontNamed: Theme.Font.bold)
-            label.name = "hitLabel"
-            label.fontSize = 7
-            label.fontColor = PlatformColor(white: 0.9, alpha: 0.7)
-            label.verticalAlignmentMode = .bottom
-            label.horizontalAlignmentMode = .right
-            label.position = CGPoint(x: size.width / 2 - 2, y: -size.height / 2 + 1)
-            label.text = "x\(n)"
-            addChild(label)
-        }
+    private static func brickColor(cell: BrickCell, row: Int, isArmored: Bool) -> PlatformColor {
+        if cell == .indestructible { return Theme.Color.indestructible }
+        if isArmored { return Theme.Color.armored }
+        if cell == .explosive { return Theme.Color.explosive }
+        if cell == .regenerating { return Theme.Color.regenerating }
+        return Theme.Color.brickColors[row % Theme.Color.brickColors.count]
+    }
 
+    private func addTypeOverlays(cell: BrickCell, size: CGSize) {
         if isIndestructible {
             addChild(makeHatchNode(size: size))
             addChild(makeIndestructibleBorderNode(size: size))
         }
         if isBonus { makeBonusOverlayNodes(size: size).forEach(addChild) }
-        addBevelOverlays(size: size)
+        if isExplosive { makeExplosiveOverlayNodes(size: size).forEach(addChild) }
+        if isRegenerating { makeRegeneratingOverlayNodes(size: size).forEach(addChild) }
     }
 
     @available(*, unavailable)
     required init?(coder aDecoder: NSCoder) { fatalError() }
 
     func hit() -> BrickState {
-        guard !hitHandled else { return brickState }
+        guard !hitHandled, !isRearming else { return brickState }
         hitHandled = true
         run(.sequence([.wait(forDuration: 1.0 / 60.0), .run { [weak self] in
             self?.hitHandled = false
@@ -77,6 +78,27 @@ final class BrickNode: SKSpriteNode {
         }
         brickState = transition(brickState, on: .hit)
         return brickState
+    }
+
+    /// Restores a regenerating brick to its intact state after the rearm delay.
+    func rearm() {
+        guard isRegenerating else { return }
+        isRearming = false
+        brickState = .intact(hitsRemaining: 1)
+        physicsBody = BrickNode.makeBrickPhysicsBody(size: size)
+        let flash = SKAction.colorize(with: .white, colorBlendFactor: 1.0, duration: 0.08)
+        let restore = SKAction.colorize(withColorBlendFactor: 0.0, duration: 0.15)
+        let fadeIn = SKAction.fadeAlpha(to: 1.0, duration: 0.15)
+        run(.group([.sequence([flash, restore]), fadeIn]))
+    }
+
+    /// Begins the rearming sequence: removes physics, fades to ghost state.
+    func beginRearm(completion: @escaping () -> Void) {
+        guard isRegenerating else { return }
+        isRearming = true
+        physicsBody = nil
+        let fade = SKAction.fadeAlpha(to: 0.12, duration: 0.15)
+        run(.sequence([fade, .wait(forDuration: 4.0), .run(completion)]))
     }
 
     func applyDamage(remainingHits: Int) {
@@ -195,7 +217,20 @@ extension BrickNode {
     }
 }
 
-private extension BrickNode {
+extension BrickNode {
+    fileprivate func makeHitLabel(n: Int, size: CGSize) -> SKLabelNode {
+        // Secondary label in bottom-right corner — crack overlay is the primary visual
+        let label = SKLabelNode(fontNamed: Theme.Font.bold)
+        label.name = "hitLabel"
+        label.fontSize = 7
+        label.fontColor = PlatformColor(white: 0.9, alpha: 0.7)
+        label.verticalAlignmentMode = .bottom
+        label.horizontalAlignmentMode = .right
+        label.position = CGPoint(x: size.width / 2 - 2, y: -size.height / 2 + 1)
+        label.text = "x\(n)"
+        return label
+    }
+
     func deflect() {
         let flash = SKAction.colorize(with: .white, colorBlendFactor: 0.5, duration: 0.04)
         let recover = SKAction.colorize(withColorBlendFactor: 0.0, duration: 0.12)
@@ -234,6 +269,46 @@ private extension BrickNode {
         addChild(highlight)
         addChild(shadow)
     }
+}
+
+private func makeExplosiveOverlayNodes(size: CGSize) -> [SKNode] {
+    let border = SKShapeNode(rectOf: size)
+    border.fillColor = .clear
+    border.strokeColor = Theme.Color.explosive
+    border.lineWidth = 1.5
+    border.run(.repeatForever(.sequence([
+        .fadeAlpha(to: 0.2, duration: 0.3),
+        .fadeAlpha(to: 1.0, duration: 0.3)
+    ])))
+
+    let icon = SKLabelNode(fontNamed: Theme.Font.bold)
+    icon.text = "!"
+    icon.fontSize = 10
+    icon.fontColor = .white
+    icon.verticalAlignmentMode = .center
+    icon.horizontalAlignmentMode = .center
+
+    return [border, icon]
+}
+
+private func makeRegeneratingOverlayNodes(size: CGSize) -> [SKNode] {
+    let border = SKShapeNode(rectOf: size)
+    border.fillColor = .clear
+    border.strokeColor = Theme.Color.regenerating
+    border.lineWidth = 1.5
+    border.run(.repeatForever(.sequence([
+        .fadeAlpha(to: 0.2, duration: 0.6),
+        .fadeAlpha(to: 1.0, duration: 0.6)
+    ])))
+
+    let icon = SKLabelNode(fontNamed: Theme.Font.bold)
+    icon.text = "↺"
+    icon.fontSize = 9
+    icon.fontColor = .white
+    icon.verticalAlignmentMode = .center
+    icon.horizontalAlignmentMode = .center
+
+    return [border, icon]
 }
 
 private func makeHatchNode(size: CGSize) -> SKShapeNode {

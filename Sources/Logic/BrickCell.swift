@@ -4,6 +4,8 @@ enum BrickCell: Equatable {
     case multiHit(Int)
     case indestructible
     case bonus
+    case explosive
+    case regenerating
 
     var initialState: BrickState {
         switch self {
@@ -14,13 +16,17 @@ enum BrickCell: Equatable {
             return .intact(hitsRemaining: n)
         case .indestructible: return .intact(hitsRemaining: 1)
         case .bonus: return .intact(hitsRemaining: 1)
+        case .explosive: return .intact(hitsRemaining: 1)
+        case .regenerating: return .intact(hitsRemaining: 1)
         }
     }
 }
 
 extension BrickCell: Codable {
     private enum CodingKeys: String, CodingKey { case type, hits }
-    private enum TypeKey: String, Codable { case empty, normal, multiHit, indestructible, bonus }
+    private enum TypeKey: String, Codable {
+        case empty, normal, multiHit, indestructible, bonus, explosive, regenerating
+    }
 
     func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)
@@ -36,6 +42,10 @@ extension BrickCell: Codable {
             try container.encode(TypeKey.indestructible, forKey: .type)
         case .bonus:
             try container.encode(TypeKey.bonus, forKey: .type)
+        case .explosive:
+            try container.encode(TypeKey.explosive, forKey: .type)
+        case .regenerating:
+            try container.encode(TypeKey.regenerating, forKey: .type)
         }
     }
 
@@ -48,6 +58,8 @@ extension BrickCell: Codable {
             self = .multiHit(try container.decode(Int.self, forKey: .hits))
         case .indestructible: self = .indestructible
         case .bonus: self = .bonus
+        case .explosive: self = .explosive
+        case .regenerating: self = .regenerating
         }
     }
 }
