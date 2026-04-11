@@ -9,6 +9,8 @@ final class BrickNode: SKSpriteNode {
     private let initialHits: Int
     private var hitHandled = false
 
+    private let isArmored: Bool
+
     var currentCell: BrickCell {
         if isIndestructible { return .indestructible }
         // Only report .bonus while intact; destroyed falls through to .empty via brickState.asCell
@@ -26,13 +28,32 @@ final class BrickNode: SKSpriteNode {
         case .intact(let n): self.initialHits = n
         case .destroyed: self.initialHits = 1
         }
-        let rowColor = isIndestructible
-            ? Theme.Color.indestructible
-            : Theme.Color.brickColors[row % Theme.Color.brickColors.count]
+        if case .multiHit = cell { self.isArmored = true } else { self.isArmored = false }
+        let rowColor: PlatformColor
+        if isIndestructible {
+            rowColor = Theme.Color.indestructible
+        } else if self.isArmored {
+            rowColor = Theme.Color.armored
+        } else {
+            rowColor = Theme.Color.brickColors[row % Theme.Color.brickColors.count]
+        }
         super.init(texture: nil, color: rowColor, size: size)
         addChild(ShadowNode.makeBrickShadow(size: size, color: rowColor))
         physicsBody = BrickNode.makeBrickPhysicsBody(size: size)
-        if case .multiHit(let n) = cell { addChild(makeHitCountLabel(n)) }
+
+        if case .multiHit(let n) = cell {
+            // Secondary label in bottom-right corner — crack overlay is the primary visual
+            let label = SKLabelNode(fontNamed: Theme.Font.bold)
+            label.name = "hitLabel"
+            label.fontSize = 7
+            label.fontColor = PlatformColor(white: 0.9, alpha: 0.7)
+            label.verticalAlignmentMode = .bottom
+            label.horizontalAlignmentMode = .right
+            label.position = CGPoint(x: size.width / 2 - 2, y: -size.height / 2 + 1)
+            label.text = "x\(n)"
+            addChild(label)
+        }
+
         if isIndestructible {
             addChild(makeHatchNode(size: size))
             addChild(makeIndestructibleBorderNode(size: size))
@@ -71,6 +92,11 @@ final class BrickNode: SKSpriteNode {
         ])
         let tint = SKAction.colorize(with: .white, colorBlendFactor: blend, duration: 0.10)
         run(.group([wobble, tint]))
+
+        if isArmored {
+            addCrackOverlay(hitsRemaining: remainingHits, size: size)
+            spawnDebris()
+        }
     }
 
     func destroy(completion: @escaping () -> Void) {
@@ -85,6 +111,73 @@ final class BrickNode: SKSpriteNode {
         let remove = SKAction.removeFromParent()
         let done = SKAction.run(completion)
         run(.sequence([firstPhase, secondPhase, done, remove]))
+    }
+}
+
+// MARK: - Armored brick crack overlays
+
+private extension BrickNode {
+
+    func addCrackOverlay(hitsRemaining: Int, size: CGSize) {
+        childNode(withName: "crackOverlay")?.removeFromParent()
+        guard hitsRemaining < initialHits else { return }
+        let path = crackPath(hitsRemaining: hitsRemaining, size: size)
+        let node = SKShapeNode(path: path)
+        node.name = "crackOverlay"
+        node.strokeColor = PlatformColor(white: 0.0, alpha: 0.60)
+        node.lineWidth = 1.0
+        node.zPosition = 2
+        addChild(node)
+    }
+
+    func crackPath(hitsRemaining: Int, size: CGSize) -> CGPath {
+        let path = CGMutablePath()
+        let w = size.width / 2
+        let h = size.height / 2
+        // Normalized damage ratio: 0 = fresh, 1 = one hit before destruction
+        let damage = Double(initialHits - hitsRemaining) / Double(max(initialHits - 1, 1))
+
+        if damage <= 0.5 {
+            // Lightly damaged: single diagonal crack
+            path.move(to: CGPoint(x: -w + 5, y: h - 2))
+            path.addLine(to: CGPoint(x: -1, y: 1))
+            path.addLine(to: CGPoint(x: 3, y: -h + 2))
+        } else {
+            // Heavily damaged: two crossed cracks + chipped corners
+            path.move(to: CGPoint(x: -w + 5, y: h - 2))
+            path.addLine(to: CGPoint(x: -1, y: 1))
+            path.addLine(to: CGPoint(x: 3, y: -h + 2))
+            path.move(to: CGPoint(x: w - 4, y: h - 2))
+            path.addLine(to: CGPoint(x: 2, y: 0))
+            path.addLine(to: CGPoint(x: -4, y: -h + 2))
+            // Chipped corners
+            path.move(to: CGPoint(x: -w + 2, y: -h + 3))
+            path.addLine(to: CGPoint(x: -w + 5, y: -h + 6))
+            path.move(to: CGPoint(x: w - 2, y: h - 3))
+            path.addLine(to: CGPoint(x: w - 6, y: h - 2))
+        }
+        return path
+    }
+
+    // 3 small silver debris pieces that scatter on each armored brick hit
+    func spawnDebris() {
+        guard let parent = parent else { return }
+        let debrisColor = PlatformColor(white: 0.85, alpha: 1)
+        for idx in 0..<3 {
+            let piece = SKSpriteNode(color: debrisColor, size: CGSize(width: 3, height: 2))
+            piece.position = position
+            piece.zPosition = zPosition + 5
+            parent.addChild(piece)
+            let angle = Double(idx) * (2.0 * .pi / 3.0) + .pi / 4.0
+            let distance: CGFloat = 12
+            let target = CGPoint(
+                x: position.x + CGFloat(cos(angle)) * distance,
+                y: position.y + CGFloat(sin(angle)) * distance
+            )
+            let move = SKAction.move(to: target, duration: 0.18)
+            let fade = SKAction.fadeOut(withDuration: 0.18)
+            piece.run(.sequence([.group([move, fade]), .removeFromParent()]))
+        }
     }
 }
 
@@ -177,17 +270,6 @@ private func makeBonusOverlayNodes(size: CGSize) -> [SKNode] {
     star.horizontalAlignmentMode = .center
 
     return [border, star]
-}
-
-private func makeHitCountLabel(_ count: Int) -> SKLabelNode {
-    let label = SKLabelNode(fontNamed: Theme.Font.bold)
-    label.name = "hitLabel"
-    label.fontSize = 9
-    label.fontColor = .white
-    label.verticalAlignmentMode = .center
-    label.horizontalAlignmentMode = .center
-    label.text = "x\(count)"
-    return label
 }
 
 private func makeIndestructibleBorderNode(size: CGSize) -> SKShapeNode {
