@@ -41,7 +41,6 @@ enum Theme {
         static let indestructible: PlatformColor = PlatformColor(white: 0.3, alpha: 1.0)
         static let indestructibleBorder: PlatformColor =
             PlatformColor(red: 0.0, green: 0.95, blue: 1.0, alpha: 0.7)
-        // Briques armored (multiHit) — plaque argentée
         static let armored: PlatformColor = PlatformColor(white: 0.72, alpha: 1.0)
         static let brickColors: [PlatformColor] = [
             PlatformColor(red: 1.0, green: 0.35, blue: 0.35, alpha: 1), // coral-red

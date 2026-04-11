@@ -9,8 +9,7 @@ final class BrickNode: SKSpriteNode {
     private let initialHits: Int
     private var hitHandled = false
 
-    // Briques armored = multiHit avec au moins 2 coups requis
-    private var isArmored: Bool { !isIndestructible && !isBonus && initialHits >= 2 }
+    private let isArmored: Bool
 
     var currentCell: BrickCell {
         if isIndestructible { return .indestructible }
@@ -29,13 +28,11 @@ final class BrickNode: SKSpriteNode {
         case .intact(let n): self.initialHits = n
         case .destroyed: self.initialHits = 1
         }
-        // Briques multiHit affichent une plaque argentée plutôt qu'une couleur par rang
-        let isMultiHitCell: Bool
-        if case .multiHit = cell { isMultiHitCell = true } else { isMultiHitCell = false }
+        if case .multiHit = cell { self.isArmored = true } else { self.isArmored = false }
         let rowColor: PlatformColor
         if isIndestructible {
             rowColor = Theme.Color.indestructible
-        } else if isMultiHitCell {
+        } else if self.isArmored {
             rowColor = Theme.Color.armored
         } else {
             rowColor = Theme.Color.brickColors[row % Theme.Color.brickColors.count]
@@ -51,7 +48,7 @@ final class BrickNode: SKSpriteNode {
         physicsBody = body
 
         if case .multiHit(let n) = cell {
-            // Label secondaire positionné en bas à droite — l'overlay de fissures est le visuel principal
+            // Secondary label in bottom-right corner — crack overlay is the primary visual
             let label = SKLabelNode(fontNamed: Theme.Font.bold)
             label.name = "hitLabel"
             label.fontSize = 7
@@ -61,22 +58,11 @@ final class BrickNode: SKSpriteNode {
             label.position = CGPoint(x: size.width / 2 - 2, y: -size.height / 2 + 1)
             label.text = "x\(n)"
             addChild(label)
-            // Plaque neuve — aucune fissure à l'état initial (hitsRemaining == initialHits)
-            addCrackOverlay(hitsRemaining: n, size: size)
         }
 
         if isIndestructible {
             addChild(makeHatchNode(size: size))
-
-            let border = SKShapeNode(rectOf: size)
-            border.fillColor = .clear
-            border.strokeColor = Theme.Color.indestructibleBorder
-            border.lineWidth = 1.5
-            border.run(.repeatForever(.sequence([
-                .fadeAlpha(to: 0.3, duration: 0.8),
-                .fadeAlpha(to: 1.0, duration: 0.8)
-            ])))
-            addChild(border)
+            addChild(makeIndestructibleBorderNode(size: size))
         }
 
         if isBonus {
@@ -142,10 +128,8 @@ final class BrickNode: SKSpriteNode {
 
 private extension BrickNode {
 
-    // Met à jour les fissures visibles en remplaçant l'overlay existant
     func addCrackOverlay(hitsRemaining: Int, size: CGSize) {
         childNode(withName: "crackOverlay")?.removeFromParent()
-        // Plaque neuve : pas de fissures
         guard hitsRemaining < initialHits else { return }
         let path = crackPath(hitsRemaining: hitsRemaining, size: size)
         let node = SKShapeNode(path: path)
@@ -156,28 +140,27 @@ private extension BrickNode {
         addChild(node)
     }
 
-    // Chemins de fissures pré-définis par tier — cohérents visuellement entre les frames
     func crackPath(hitsRemaining: Int, size: CGSize) -> CGPath {
         let path = CGMutablePath()
         let w = size.width / 2
         let h = size.height / 2
-        // Ratio de dommage normalisé : 0 = neuf, 1 = dernier coup avant destruction
+        // Normalized damage ratio: 0 = fresh, 1 = one hit before destruction
         let damage = Double(initialHits - hitsRemaining) / Double(max(initialHits - 1, 1))
 
         if damage <= 0.5 {
-            // Légèrement endommagé : une fissure diagonale centrale
+            // Lightly damaged: single diagonal crack
             path.move(to: CGPoint(x: -w + 5, y: h - 2))
             path.addLine(to: CGPoint(x: -1, y: 1))
             path.addLine(to: CGPoint(x: 3, y: -h + 2))
         } else {
-            // Gravement endommagé : deux fissures croisées + coins écaillés
+            // Heavily damaged: two crossed cracks + chipped corners
             path.move(to: CGPoint(x: -w + 5, y: h - 2))
             path.addLine(to: CGPoint(x: -1, y: 1))
             path.addLine(to: CGPoint(x: 3, y: -h + 2))
             path.move(to: CGPoint(x: w - 4, y: h - 2))
             path.addLine(to: CGPoint(x: 2, y: 0))
             path.addLine(to: CGPoint(x: -4, y: -h + 2))
-            // Coins écaillés
+            // Chipped corners
             path.move(to: CGPoint(x: -w + 2, y: -h + 3))
             path.addLine(to: CGPoint(x: -w + 5, y: -h + 6))
             path.move(to: CGPoint(x: w - 2, y: h - 3))
@@ -186,7 +169,7 @@ private extension BrickNode {
         return path
     }
 
-    // 3 petits débris argentés qui s'éparpillent à chaque coup sur une brique armored
+    // 3 small silver debris pieces that scatter on each armored brick hit
     func spawnDebris() {
         guard let parent = parent else { return }
         let debrisColor = PlatformColor(white: 0.85, alpha: 1)
@@ -285,4 +268,16 @@ private func makeBonusOverlayNodes(size: CGSize) -> [SKNode] {
     star.horizontalAlignmentMode = .center
 
     return [border, star]
+}
+
+private func makeIndestructibleBorderNode(size: CGSize) -> SKShapeNode {
+    let border = SKShapeNode(rectOf: size)
+    border.fillColor = .clear
+    border.strokeColor = Theme.Color.indestructibleBorder
+    border.lineWidth = 1.5
+    border.run(.repeatForever(.sequence([
+        .fadeAlpha(to: 0.3, duration: 0.8),
+        .fadeAlpha(to: 1.0, duration: 0.8)
+    ])))
+    return border
 }
