@@ -5,17 +5,20 @@ import SpriteKit
 /// The subset of contact-event consequences that require `GameScene` to mutate its own state.
 struct ContactOutcome {
     let pointsScored: Int
+    let comboMultiplier: Int
     let lifeAwarded: Bool
     let extraBallSpawn: (position: CGPoint, velocity: CGVector)?
     let powerUpEffects: [PowerUpEffect]
 
     init(
         pointsScored: Int = 0,
+        comboMultiplier: Int = 1,
         lifeAwarded: Bool = false,
         extraBallSpawn: (position: CGPoint, velocity: CGVector)? = nil,
         powerUpEffects: [PowerUpEffect] = []
     ) {
         self.pointsScored = pointsScored
+        self.comboMultiplier = comboMultiplier
         self.lifeAwarded = lifeAwarded
         self.extraBallSpawn = extraBallSpawn
         self.powerUpEffects = powerUpEffects
@@ -33,6 +36,9 @@ final class ContactCoordinator {
     private let addToScene: ([SKNode]) -> Void
     private let removeBrick: (BrickNode) -> Void
     private let remainingBrickCount: () -> Int
+    private let comboTracker = ComboTracker()
+
+    func resetCombo() { comboTracker.reset() }
 
     init(
         powerUp: PowerUpCoordinator,
@@ -86,7 +92,9 @@ extension ContactCoordinator {
             brick.applyDamage(remainingHits: remaining)
             return ContactOutcome()
         case .destroyed:
-            let points = Theme.Layout.brickPoints
+            let prevMultiplier = comboTracker.multiplier
+            let multiplier = comboTracker.recordHit()
+            let points = Theme.Layout.brickPoints * multiplier
             let spawnPowerUp = !powerUp.isPowerBallActive
             removeBrick(brick)
             brick.destroy { [weak self] in
@@ -95,14 +103,23 @@ extension ContactCoordinator {
                     gameLoop.markLevelComplete()
                 }
             }
-            var nodesToAdd = SceneEffects.spawnScorePopup(at: contactPoint, points: points)
+            var nodesToAdd = SceneEffects.spawnScorePopup(
+                at: contactPoint, points: points,
+                multiplier: multiplier > 1 ? multiplier : nil
+            )
+            if multiplier > prevMultiplier {
+                nodesToAdd.append(ComboPopupNode(
+                    kind: .tierUp(multiplier: multiplier),
+                    at: CGPoint(x: contactPoint.x, y: contactPoint.y + 20)
+                ))
+            }
             if brick.isBonus {
                 nodesToAdd.append(powerUp.spawnGuaranteed(at: brick.position))
             } else if spawnPowerUp, let node = powerUp.spawnIfEligible(at: brick.position) {
                 nodesToAdd.append(node)
             }
             addToScene(nodesToAdd)
-            return ContactOutcome(pointsScored: points)
+            return ContactOutcome(pointsScored: points, comboMultiplier: multiplier)
         }
     }
 

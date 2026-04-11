@@ -243,7 +243,10 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
     private func apply(_ outcome: ContactOutcome) {
         if outcome.pointsScored > 0 {
             gameState = gameState.addScore(outcome.pointsScored)
-            gameCamera.updateHUD(lives: gameState.lives, score: gameState.score)
+            gameCamera.updateHUD(
+                lives: gameState.lives, score: gameState.score,
+                comboMultiplier: outcome.comboMultiplier
+            )
         }
         if outcome.lifeAwarded {
             gameState = gameState.addLife()
@@ -295,6 +298,7 @@ private extension GameScene {
 
     func handleBallLoss() {
         // State mutations
+        contactCoordinator.resetCombo()
         applyPowerUpEffects(powerUp.clearAll())
         gameState = gameState.ballLost()
         let isGameOver = gameState.phase == .gameOver

@@ -18,8 +18,8 @@ final class GameCameraNode: SKCameraNode {
         spawnLevelTitle(levelName)
     }
 
-    func updateHUD(lives: Int, score: Int) {
-        hud.update(lives: lives, score: score)
+    func updateHUD(lives: Int, score: Int, comboMultiplier: Int = 1) {
+        hud.update(lives: lives, score: score, comboMultiplier: comboMultiplier)
     }
 
     func setPaused(_ isPaused: Bool) {

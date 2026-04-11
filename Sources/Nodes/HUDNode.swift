@@ -4,12 +4,15 @@ final class HUDNode: SKNode {
     private let livesLabel: SKLabelNode
     private let scoreLabel: SKLabelNode
     private let pauseButton: SKLabelNode
+    private let comboLabel: SKLabelNode
     private var lastScore: Int = 0
+    private var lastComboMultiplier: Int = 1
 
     init(sceneSize: CGSize, topSafeArea: CGFloat) {
         livesLabel = SKLabelNode.makeBody("", color: Theme.Color.accent)
         scoreLabel = SKLabelNode.makeBody("", color: Theme.Color.accent)
         pauseButton = SKLabelNode.makeBody(Theme.Symbol.pause, color: Theme.Color.primary)
+        comboLabel = SKLabelNode.makeBody("", color: Theme.Color.danger)
         super.init()
         let hudY = sceneSize.height / 2 - topSafeArea - Theme.Layout.hudTopPadding
         livesLabel.horizontalAlignmentMode = .left
@@ -18,12 +21,16 @@ final class HUDNode: SKNode {
         pauseButton.horizontalAlignmentMode = .right
         pauseButton.position = CGPoint(x: sceneSize.width / 2 - Theme.Layout.hudSideMargin, y: hudY)
         pauseButton.name = "pauseButton"
+        // Combo label sits below the score, hidden while multiplier is ×1
+        comboLabel.position = CGPoint(x: 0, y: hudY + Theme.Layout.highScoreOffsetY)
+        comboLabel.alpha = 0
         addChild(livesLabel)
         addChild(scoreLabel)
         addChild(pauseButton)
+        addChild(comboLabel)
     }
 
-    func update(lives: Int, score: Int) {
+    func update(lives: Int, score: Int, comboMultiplier: Int = 1) {
         livesLabel.text = livesText(lives)
         if score != lastScore {
             lastScore = score
@@ -35,8 +42,36 @@ final class HUDNode: SKNode {
             ])
             scoreLabel.run(pop, withKey: "scorePop")
         }
+        updateComboLabel(multiplier: comboMultiplier)
     }
 
     @available(*, unavailable)
     required init?(coder aDecoder: NSCoder) { fatalError() }
+}
+
+// MARK: - Combo label
+
+private extension HUDNode {
+    func updateComboLabel(multiplier: Int) {
+        if multiplier <= 1 {
+            if lastComboMultiplier > 1 {
+                comboLabel.removeAllActions()
+                comboLabel.run(.fadeOut(withDuration: 0.25))
+            }
+            lastComboMultiplier = multiplier
+            return
+        }
+        comboLabel.text = "×\(multiplier) COMBO"
+        if comboLabel.alpha < 0.1 {
+            comboLabel.run(.fadeIn(withDuration: 0.15))
+        }
+        if multiplier != lastComboMultiplier {
+            comboLabel.removeAction(forKey: "comboPulse")
+            comboLabel.run(.sequence([
+                .scale(to: 1.45, duration: 0.06),
+                .scale(to: 1.0, duration: 0.10)
+            ]), withKey: "comboPulse")
+        }
+        lastComboMultiplier = multiplier
+    }
 }
