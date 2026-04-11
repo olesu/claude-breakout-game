@@ -26,6 +26,10 @@ final class GameSummaryScene: SKScene {
         CGWarpMouseCursorPosition(CGPoint(x: displayBounds.midX, y: displayBounds.midY))
         #endif
         backgroundColor = .black
+        setupNodes()
+    }
+
+    private func setupNodes() {
         let starfield = AmbientStarfieldNode(sceneSize: size)
         starfield.position = CGPoint(x: frame.midX, y: frame.maxY)
         addChild(starfield)
@@ -61,11 +65,10 @@ final class GameSummaryScene: SKScene {
         let prompt = SKLabelNode.makeBody(promptText)
         prompt.position = CGPoint(x: frame.midX, y: frame.midY + Theme.Layout.promptOffsetY)
         addChild(prompt)
-        let pulse = SKAction.sequence([
+        prompt.run(.repeatForever(.sequence([
             .fadeAlpha(to: 0.3, duration: 0.8),
             .fadeAlpha(to: 1.0, duration: 0.8)
-        ])
-        prompt.run(.repeatForever(pulse))
+        ])))
 
         if outcome == .victory {
             let burst = VictoryBurstNode(sceneSize: size)

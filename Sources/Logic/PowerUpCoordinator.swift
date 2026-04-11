@@ -1,14 +1,26 @@
 import SpriteKit
 
+enum PowerUpEffect: Equatable {
+    case activatePowerBall
+    case deactivatePowerBall
+    case activateSlowBall
+    case deactivateSlowBall
+    case activateWidePaddle
+    case deactivateWidePaddle
+}
+
 enum CollectResult {
     case activated(PowerUpType)
     case instant(PowerUpType)
     case none
 }
 
+struct CollectOutcome {
+    let result: CollectResult
+    let effects: [PowerUpEffect]
+}
+
 final class PowerUpCoordinator {
-    private var balls: [BallNode]
-    private let paddle: PaddleNode
     private var nodes: [PowerUpNode] = []
     private var laserNodes: [LaserNode] = []
     private var laserCooldown: TimeInterval = 0
@@ -18,21 +30,17 @@ final class PowerUpCoordinator {
     var isPowerBallActive: Bool { state.active == .powerBall }
     var isLaserActive: Bool { state.active == .laser }
 
-    init(
-        balls: [BallNode],
-        paddle: PaddleNode,
-        dropProbability: Double = Theme.Layout.powerUpDropProbability
-    ) {
-        self.balls = balls
-        self.paddle = paddle
+    init(dropProbability: Double = Theme.Layout.powerUpDropProbability) {
         self.dropProbability = dropProbability
     }
 
-    func update(delta: TimeInterval, floorY: CGFloat) {
+    @discardableResult
+    func update(delta: TimeInterval, floorY: CGFloat) -> [PowerUpEffect] {
         let before = state
         state = state.tick(delta: delta)
+        var effects: [PowerUpEffect] = []
         if before.isActive && !state.isActive, let type = before.active {
-            removeEffect(for: type)
+            effects = deactivationEffects(for: type)
         }
         nodes = nodes.filter { node in
             if node.position.y < floorY - 20 {
@@ -43,6 +51,7 @@ final class PowerUpCoordinator {
         }
         laserNodes = laserNodes.filter { $0.parent != nil }
         laserCooldown = max(0, laserCooldown - delta)
+        return effects
     }
 
     func spawnIfEligible(at position: CGPoint) -> PowerUpNode? {
@@ -71,34 +80,35 @@ final class PowerUpCoordinator {
     }
 
     @discardableResult
-    func collect(_ node: PowerUpNode) -> CollectResult {
+    func collect(_ node: PowerUpNode) -> CollectOutcome {
         node.removeFromParent()
         nodes.removeAll { $0 === node }
         let type = node.type
-        guard type.duration != nil else { return .instant(type) }
+        guard type.duration != nil else {
+            return CollectOutcome(result: .instant(type), effects: [])
+        }
         let newState = state.collect(type)
         // Defensive: unreachable today (timed types always produce an active state),
         // but guards against future changes to PowerUpState.collect semantics.
-        guard newState.isActive else { return .none }
+        guard newState.isActive else { return CollectOutcome(result: .none, effects: []) }
+        var effects: [PowerUpEffect] = []
         if let previous = state.active {
-            removeEffect(for: previous)
+            effects += deactivationEffects(for: previous)
         }
         state = newState
-        applyEffect(for: type)
-        return .activated(type)
+        effects += activationEffects(for: type)
+        return CollectOutcome(result: .activated(type), effects: effects)
     }
 
-    /// Adds `ball` to the tracked set and immediately applies any currently active timed effect.
-    func addBall(_ ball: BallNode) {
-        balls.append(ball)
-        if let type = state.active {
-            applyEffect(for: type, to: ball)
+    /// Returns effects that should be applied to a newly added ball.
+    /// Call after setting the ball's velocity — `activateSlowBall` captures it immediately.
+    func effectsForNewBall() -> [PowerUpEffect] {
+        guard let type = state.active else { return [] }
+        switch type {
+        case .powerBall: return [.activatePowerBall]
+        case .slowBall:  return [.activateSlowBall]
+        case .widePaddle, .extraLife, .multiBall, .laser: return []
         }
-    }
-
-    /// Removes `ball` from the tracked set (e.g. when an extra ball is silently culled).
-    func removeBall(_ ball: BallNode) {
-        balls.removeAll { $0 === ball }
     }
 
     func fireLasers(from paddlePosition: CGPoint, paddleHalfWidth: CGFloat) -> [LaserNode] {
@@ -118,47 +128,38 @@ final class PowerUpCoordinator {
         return newLasers
     }
 
-    func clearAll() {
+    @discardableResult
+    func clearAll() -> [PowerUpEffect] {
+        var effects: [PowerUpEffect] = []
         if state.isActive, let type = state.active {
+            effects = deactivationEffects(for: type)
             state = state.clear()
-            removeEffect(for: type)
         }
         // Nodes may be falling but not yet collected; always clear them.
         nodes.forEach { $0.removeFromParent() }
         nodes.removeAll()
         laserNodes.forEach { $0.removeFromParent() }
         laserNodes.removeAll()
+        return effects
     }
 
     // MARK: - Effect dispatch
 
-    private func applyEffect(for type: PowerUpType) {
+    private func activationEffects(for type: PowerUpType) -> [PowerUpEffect] {
         switch type {
-        case .powerBall: balls.forEach { applyEffect(for: type, to: $0) }
-        case .widePaddle: paddle.activateWidePaddle()
-        case .slowBall: balls.forEach { applyEffect(for: type, to: $0) }
-        case .extraLife: break  // instant effect; handled by caller via CollectResult
-        case .multiBall: break  // activation handled separately via CollectResult
-        case .laser: break      // firing is input-driven; no persistent ball/paddle mutation
+        case .powerBall:  return [.activatePowerBall]
+        case .widePaddle: return [.activateWidePaddle]
+        case .slowBall:   return [.activateSlowBall]
+        case .extraLife, .multiBall, .laser: return []
         }
     }
 
-    private func applyEffect(for type: PowerUpType, to ball: BallNode) {
+    private func deactivationEffects(for type: PowerUpType) -> [PowerUpEffect] {
         switch type {
-        case .powerBall: ball.activatePowerBall()
-        case .slowBall: ball.activateSlowBall()
-        case .widePaddle, .extraLife, .multiBall, .laser: break
-        }
-    }
-
-    private func removeEffect(for type: PowerUpType) {
-        switch type {
-        case .powerBall: balls.forEach { $0.deactivatePowerBall() }
-        case .widePaddle: paddle.deactivateWidePaddle()
-        case .slowBall: balls.forEach { $0.deactivateSlowBall() }
-        case .extraLife: break  // no ongoing effect to remove
-        case .multiBall: break  // ended when all extra balls are lost
-        case .laser: break      // in-flight lasers complete naturally; no persistent state to undo
+        case .powerBall:  return [.deactivatePowerBall]
+        case .widePaddle: return [.deactivateWidePaddle]
+        case .slowBall:   return [.deactivateSlowBall]
+        case .extraLife, .multiBall, .laser: return []
         }
     }
 }

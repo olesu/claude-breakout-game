@@ -5,7 +5,7 @@ import Testing
 struct PowerUpCoordinatorBonusTests {
 
     private func makeCoordinator() -> PowerUpCoordinator {
-        PowerUpCoordinator(balls: [], paddle: PaddleNode(sceneWidth: 400), dropProbability: 1.0)
+        PowerUpCoordinator(dropProbability: 1.0)
     }
 
     private func makeCoordinatorWithActivePowerUp() -> PowerUpCoordinator {

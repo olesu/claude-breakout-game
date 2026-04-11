@@ -3,6 +3,8 @@ import SpriteKit
 import AppKit
 #endif
 
+// Thin orchestrator; body length reflects coordinator wiring, not logic.
+// swiftlint:disable:next type_body_length
 final class GameScene: SKScene, SKPhysicsContactDelegate {
     private let levelIndex: Int
     private let level: Level
@@ -15,6 +17,7 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
     private var permanentBricks: [BrickNode] = []
     private var powerUp: PowerUpCoordinator!
     private var gameLoop: GameLoopCoordinator!
+    private var contactCoordinator: ContactCoordinator!
     private let persistence = GamePersistenceCoordinator()
     private let savedBrickGrid: [[BrickCell]]?
     private let inputCoordinator = InputCoordinator()
@@ -97,23 +100,39 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
         bricks = allBricks.filter { !$0.isIndestructible }
         allBricks.forEach { addChild($0) }
 
-        powerUp = PowerUpCoordinator(balls: balls, paddle: paddle)
-        gameLoop = GameLoopCoordinator(paddle: paddle, powerUp: powerUp)
+        powerUp = PowerUpCoordinator()
+        gameLoop = GameLoopCoordinator(powerUp: powerUp)
+        contactCoordinator = ContactCoordinator(
+            powerUp: powerUp,
+            paddle: paddle,
+            gameLoop: gameLoop,
+            addToScene: { [weak self] nodes in nodes.forEach { self?.addChild($0) } },
+            removeBrick: { [weak self] brick in self?.bricks.removeAll { $0 === brick } },
+            remainingBrickCount: { [weak self] in self?.bricks.count ?? 0 }
+        )
     }
 
     // MARK: - Game loop
 
     override func update(_ currentTime: TimeInterval) {
         // Indices are descending — safe to remove without shifting earlier positions.
+        // No coordinator notification needed when a ball is culled: PowerUpCoordinator holds no
+        // ball refs. Deactivation effects reach only balls still in the scene-owned `balls` array.
         for idx in fallenExtraBallIndices(balls: balls, floorY: frame.minY) {
             let fallen = balls[idx]
             fallen.removeFromParent()
             balls.remove(at: idx)
-            powerUp.removeBall(fallen)
         }
-        switch gameLoop.tick(
-            currentTime: currentTime, phase: gameState.phase, floorY: frame.minY, balls: balls
-        ) {
+        let tick = gameLoop.tick(
+            currentTime: currentTime,
+            phase: gameState.phase,
+            floorY: frame.minY,
+            balls: balls,
+            paddlePosition: paddle.position,
+            paddleHalfHeight: paddle.size.height / 2
+        )
+        applyPowerUpEffects(tick.powerUpEffects)
+        switch tick.action {
         case .handleBallLoss:    handleBallLoss()
         case .advanceLevel:      advanceLevel()
         case .nothing, .resetBall: break
@@ -218,35 +237,25 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
     // MARK: - Physics contact
 
     func didBegin(_ contact: SKPhysicsContact) {
-        switch classifyContact(contact) {
-        case .brick(let brick, let point):
-            handleBrickContact(brick, contactPoint: point)
-        case .powerUp(let node):
-            handlePowerUpContact(node)
-        case .paddleHit(let ball, let point):
-            if gameState.phase != .waitingToLaunch { paddle.squash() }
-            if let ball { reflectBallOffPaddle(contactPoint: point, ball: ball) }
-        case .wallHit(let wall):
-            wall.flash()
-        case .laser(let laser, let brick, let point):
-            handleLaserContact(laser, brick: brick, contactPoint: point)
-        case .unknown:
-            break
+        apply(contactCoordinator.handle(contact, balls: balls, gamePhase: gameState.phase))
+    }
+
+    private func apply(_ outcome: ContactOutcome) {
+        if outcome.pointsScored > 0 {
+            gameState = gameState.addScore(outcome.pointsScored)
+            gameCamera.updateHUD(lives: gameState.lives, score: gameState.score)
         }
+        if outcome.lifeAwarded {
+            gameState = gameState.addLife()
+            gameCamera.updateHUD(lives: gameState.lives, score: gameState.score)
+        }
+        if let spawn = outcome.extraBallSpawn {
+            spawnExtraBalls(at: spawn.position, velocity: spawn.velocity)
+        }
+        applyPowerUpEffects(outcome.powerUpEffects)
     }
 
     // MARK: - Game lifecycle
-
-    private func applyPauseState() {
-        let isPaused = gameState.phase == .paused
-        physicsWorld.speed = isPaused ? 0 : 1
-        gameCamera.setPaused(isPaused)
-        if isPaused {
-            persistence.gamePaused(snapshot: makeSnapshot)
-        } else {
-            gameLoop.resetLastUpdateTime()
-        }
-    }
 
     override func willMove(from view: SKView) {
         #if os(macOS)
@@ -259,7 +268,23 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
         )
     }
 
-    private func makeSnapshot() -> SavedGame {
+}
+
+// MARK: - Game lifecycle helpers
+
+private extension GameScene {
+    func applyPauseState() {
+        let isPaused = gameState.phase == .paused
+        physicsWorld.speed = isPaused ? 0 : 1
+        gameCamera.setPaused(isPaused)
+        if isPaused {
+            persistence.gamePaused(snapshot: makeSnapshot)
+        } else {
+            gameLoop.resetLastUpdateTime()
+        }
+    }
+
+    func makeSnapshot() -> SavedGame {
         SavedGame(
             levelIndex: levelIndex,
             score: gameState.score,
@@ -268,9 +293,9 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
         )
     }
 
-    private func handleBallLoss() {
+    func handleBallLoss() {
         // State mutations
-        powerUp.clearAll()
+        applyPowerUpEffects(powerUp.clearAll())
         gameState = gameState.ballLost()
         let isGameOver = gameState.phase == .gameOver
 
@@ -287,7 +312,6 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
             present(GameSummaryScene(size: size, outcome: .gameOver, score: gameState.score))
         }
     }
-
 }
 
 // MARK: - Multi Ball
@@ -297,51 +321,49 @@ private extension GameScene {
         for spec in makeExtraBalls(
             at: position, primaryVelocity: velocity, radius: Theme.Layout.ballRadius
         ) {
-            // velocity must be set before powerUp.addBall(_:): activateSlowBall reads
+            // velocity must be set before effectsForNewBall(): activateSlowBall reads
             // physicsBody.velocity immediately to capture speedBeforeSlowBall.
             spec.ball.physicsBody?.velocity = spec.velocity
             addChild(spec.ball)
             spec.ball.attachTrail(to: self)
             balls.append(spec.ball)
-            powerUp.addBall(spec.ball)
+            applyPowerUpEffects(powerUp.effectsForNewBall(), to: spec.ball)
         }
     }
 }
 
-// MARK: - Contact handlers
+// MARK: - Power-up effects
 
 private extension GameScene {
-    func handlePowerUpContact(_ node: PowerUpNode) {
-        switch powerUp.collect(node) {
-        case .activated(let type):
-            let ballPos = balls.first?.position ?? paddle.position
-            SceneEffects.spawnPowerUpActivationEffect(
-                for: type, ballPosition: ballPos, paddlePosition: paddle.position
-            ).forEach(addChild)
-        case .instant(.extraLife):
-            gameState = gameState.addLife()
-            gameCamera.updateHUD(lives: gameState.lives, score: gameState.score)
-            let ballPos = balls.first?.position ?? paddle.position
-            SceneEffects.spawnPowerUpActivationEffect(
-                for: .extraLife, ballPosition: ballPos, paddlePosition: paddle.position
-            ).forEach(addChild)
-        case .instant(.multiBall):
-            // Only spawn while playing: in waitingToLaunch the ball has zero velocity,
-            // so extra balls would be spawned motionless and never receive launch velocity.
-            guard gameState.phase == .playing,
-                  let primary = balls.first,
-                  let vel = primary.physicsBody?.velocity else { return }
-            spawnExtraBalls(at: primary.position, velocity: vel)
-            SceneEffects.spawnPowerUpActivationEffect(
-                for: .multiBall, ballPosition: primary.position, paddlePosition: paddle.position
-            ).forEach(addChild)
-        case .instant:
-            break  // New instant types need explicit handling above this line.
-        case .none:
-            break
+    /// Applies effects to all current balls and the paddle.
+    func applyPowerUpEffects(_ effects: [PowerUpEffect]) {
+        for effect in effects {
+            switch effect {
+            case .activatePowerBall:    balls.forEach { $0.activatePowerBall() }
+            case .deactivatePowerBall:  balls.forEach { $0.deactivatePowerBall() }
+            case .activateSlowBall:     balls.forEach { $0.activateSlowBall() }
+            case .deactivateSlowBall:   balls.forEach { $0.deactivateSlowBall() }
+            case .activateWidePaddle:   paddle.activateWidePaddle()
+            case .deactivateWidePaddle: paddle.deactivateWidePaddle()
+            }
         }
     }
 
+    /// Applies effects to a single ball (used when a new ball is added mid-power-up).
+    func applyPowerUpEffects(_ effects: [PowerUpEffect], to ball: BallNode) {
+        for effect in effects {
+            switch effect {
+            case .activatePowerBall: ball.activatePowerBall()
+            case .activateSlowBall:  ball.activateSlowBall()
+            default: break
+            }
+        }
+    }
+}
+
+// MARK: - Game actions
+
+private extension GameScene {
     func advanceLevel() {
         let nextIndex = levelIndex + 1
         if nextIndex < Level.all.count {
@@ -353,56 +375,9 @@ private extension GameScene {
         }
     }
 
-    /// Overrides ball velocity based on where it hit the paddle.
-    /// Ignores sub-paddle contacts (physics glitch guard).
-    func reflectBallOffPaddle(contactPoint: CGPoint, ball: BallNode) {
-        guard contactPoint.y >= paddle.position.y, let body = ball.physicsBody else { return }
-        let speed = hypot(body.velocity.dx, body.velocity.dy)
-        let halfWidth = paddle.size.width * paddle.xScale / 2
-        body.velocity = paddleReflectedVelocity(
-            speed: speed,
-            contactX: contactPoint.x,
-            paddleCenterX: paddle.position.x,
-            halfPaddleWidth: halfWidth,
-            maxAngle: Theme.Layout.paddleMaxAngle
-        )
-    }
-
-    func handleBrickContact(_ brick: BrickNode, contactPoint: CGPoint) {
-        let color = brick.color
-        SceneEffects.spawnSparks(at: contactPoint, color: color).forEach(addChild)
-
-        switch brick.hit() {
-        case .intact(let remaining):
-            brick.applyDamage(remainingHits: remaining)
-        case .destroyed:
-            let points = Theme.Layout.brickPoints
-            let spawnPowerUp = !powerUp.isPowerBallActive
-            bricks.removeAll { $0 === brick }
-            gameState = gameState.addScore(points)
-            gameCamera.updateHUD(lives: gameState.lives, score: gameState.score)
-            SceneEffects.spawnScorePopup(at: contactPoint, points: points).forEach(addChild)
-            brick.destroy { [weak self] in
-                guard let self else { return }
-                if bricks.isEmpty && !gameLoop.levelComplete { gameLoop.markLevelComplete() }
-            }
-            if brick.isBonus {
-                addChild(powerUp.spawnGuaranteed(at: brick.position))
-            } else if spawnPowerUp, let node = powerUp.spawnIfEligible(at: brick.position) {
-                addChild(node)
-            }
-        }
-    }
-
-    func handleLaserContact(_ laser: LaserNode, brick: BrickNode?, contactPoint: CGPoint) {
-        laser.removeFromParent()
-        if let brick { handleBrickContact(brick, contactPoint: contactPoint) }
-    }
-
     func fireLasersIfActive() {
         let halfWidth = paddle.size.width * paddle.xScale / 2
         powerUp.fireLasers(from: paddle.position, paddleHalfWidth: halfWidth)
             .forEach(addChild)
     }
-
 }

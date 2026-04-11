@@ -12,24 +12,31 @@ enum ContactEvent {
 /// Classifies an `SKPhysicsContact` into a typed `ContactEvent`.
 /// Returns `.unknown` for any contact combination not explicitly handled.
 func classifyContact(_ contact: SKPhysicsContact) -> ContactEvent {
-    let a = contact.bodyA.node
-    let b = contact.bodyB.node
+    classifyContact(
+        nodeA: contact.bodyA.node,
+        nodeB: contact.bodyB.node,
+        contactPoint: contact.contactPoint
+    )
+}
 
-    if let laser = (a as? LaserNode) ?? (b as? LaserNode) {
-        let brick = (a as? BrickNode) ?? (b as? BrickNode)
-        return .laser(laser, brick: brick, contactPoint: contact.contactPoint)
+func classifyContact(nodeA: SKNode?, nodeB: SKNode?, contactPoint: CGPoint) -> ContactEvent {
+    if let laser = (nodeA as? LaserNode) ?? (nodeB as? LaserNode) {
+        let brick = (nodeA as? BrickNode) ?? (nodeB as? BrickNode)
+        return .laser(laser, brick: brick, contactPoint: contactPoint)
     }
-    if let brick = (a as? BrickNode) ?? (b as? BrickNode), brick.physicsBody != nil {
-        return .brick(brick, contactPoint: contact.contactPoint)
+    if let brick = (nodeA as? BrickNode) ?? (nodeB as? BrickNode), brick.physicsBody != nil {
+        return .brick(brick, contactPoint: contactPoint)
     }
-    if let node = (a as? PowerUpNode) ?? (b as? PowerUpNode) {
+    if let node = (nodeA as? PowerUpNode) ?? (nodeB as? PowerUpNode) {
         return .powerUp(node)
     }
-    if (a as? PaddleNode) != nil || (b as? PaddleNode) != nil {
-        return .paddleHit(ball: (a as? BallNode) ?? (b as? BallNode),
-                          contactPoint: contact.contactPoint)
+    if (nodeA as? PaddleNode) != nil || (nodeB as? PaddleNode) != nil {
+        return .paddleHit(
+            ball: (nodeA as? BallNode) ?? (nodeB as? BallNode),
+            contactPoint: contactPoint
+        )
     }
-    if let wall = (a as? WallNode) ?? (b as? WallNode) {
+    if let wall = (nodeA as? WallNode) ?? (nodeB as? WallNode) {
         return .wallHit(wall)
     }
     return .unknown

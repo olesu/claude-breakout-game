@@ -39,13 +39,7 @@ final class BrickNode: SKSpriteNode {
         }
         super.init(texture: nil, color: rowColor, size: size)
         addChild(ShadowNode.makeBrickShadow(size: size, color: rowColor))
-        let body = SKPhysicsBody(rectangleOf: size)
-        body.isDynamic = false
-        body.restitution = 1
-        body.friction = 0
-        body.categoryBitMask = PhysicsCategory.brick
-        body.contactTestBitMask = PhysicsCategory.ball
-        physicsBody = body
+        physicsBody = BrickNode.makeBrickPhysicsBody(size: size)
 
         if case .multiHit(let n) = cell {
             // Secondary label in bottom-right corner — crack overlay is the primary visual
@@ -64,11 +58,7 @@ final class BrickNode: SKSpriteNode {
             addChild(makeHatchNode(size: size))
             addChild(makeIndestructibleBorderNode(size: size))
         }
-
-        if isBonus {
-            makeBonusOverlayNodes(size: size).forEach(addChild)
-        }
-
+        if isBonus { makeBonusOverlayNodes(size: size).forEach(addChild) }
         addBevelOverlays(size: size)
     }
 
@@ -192,6 +182,18 @@ private extension BrickNode {
 }
 
 // MARK: - Private helpers
+
+extension BrickNode {
+    private static func makeBrickPhysicsBody(size: CGSize) -> SKPhysicsBody {
+        let body = SKPhysicsBody(rectangleOf: size)
+        body.isDynamic = false
+        body.restitution = 1
+        body.friction = 0
+        body.categoryBitMask = PhysicsCategory.brick
+        body.contactTestBitMask = PhysicsCategory.ball
+        return body
+    }
+}
 
 private extension BrickNode {
     func deflect() {
