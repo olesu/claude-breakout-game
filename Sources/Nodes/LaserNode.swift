@@ -19,6 +19,7 @@ final class LaserNode: SKShapeNode {
         body.linearDamping = 0
         body.categoryBitMask    = PhysicsCategory.laser
         body.collisionBitMask   = 0
+        // indestructibleBrick excluded — lasers pass through permanent bricks
         body.contactTestBitMask = PhysicsCategory.brick | PhysicsCategory.wall
         physicsBody = body
     }
