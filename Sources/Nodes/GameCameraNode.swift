@@ -22,6 +22,10 @@ final class GameCameraNode: SKCameraNode {
         hud.update(lives: lives, score: score, comboMultiplier: comboMultiplier)
     }
 
+    func updateMuteButton(isMuted: Bool) {
+        hud.setMuted(isMuted)
+    }
+
     func setPaused(_ isPaused: Bool) {
         pauseOverlay.isHidden = !isPaused
     }
