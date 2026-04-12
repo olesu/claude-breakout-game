@@ -5,10 +5,28 @@
       "Bash(env -u GITHUB_TOKEN gh issue view*)",
       "Bash(env -u GITHUB_TOKEN gh issue create*)",
       "Bash(env -u GITHUB_TOKEN gh label list*)",
-      "Bash(env -u GITHUB_TOKEN gh label create*)"
+      "Bash(env -u GITHUB_TOKEN gh label create*)",
+      "Bash(env -u GITHUB_TOKEN gh pr create*)",
+      "Bash(env -u GITHUB_TOKEN gh pr view*)",
+      "Bash(env -u GITHUB_TOKEN gh pr list*)",
+      "Bash(env -u GITHUB_TOKEN gh pr comment*)",
+      "Bash(env -u GITHUB_TOKEN gh pr review*)",
+      "Bash(env -u GITHUB_TOKEN gh pr diff*)",
+      "Bash(env -u GITHUB_TOKEN gh pr edit*)"
     ]
   },
   "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/Users/olesu/Developer/breakout-game/.claude/hooks/guard-main-branch.sh"
+          }
+        ]
+      }
+    ],
     "PostToolUse": [
       {
         "matcher": "Write|Edit",
