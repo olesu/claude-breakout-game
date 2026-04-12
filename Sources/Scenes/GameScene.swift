@@ -136,6 +136,9 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
             paddleHalfHeight: paddle.size.height / 2
         )
         applyPowerUpEffects(tick.powerUpEffects)
+        if tick.expiredPowerUpType != nil {
+            sound.playPowerUpExpire()
+        }
         switch tick.action {
         case .handleBallLoss:    handleBallLoss()
         case .advanceLevel:      advanceLevel()
@@ -327,8 +330,11 @@ private extension GameScene {
 
         // Scene transition (happens last)
         if isGameOver {
+            sound.playGameOver()
             persistence.gameOver()
             present(GameSummaryScene(size: size, outcome: .gameOver, score: gameState.score))
+        } else {
+            sound.playBallLoss()
         }
     }
 }
@@ -386,6 +392,7 @@ private extension GameScene {
     func advanceLevel() {
         let nextIndex = levelIndex + 1
         if nextIndex < Level.all.count {
+            sound.playLevelComplete()
             gameState = gameState.resetForNextLevel()
             present(GameScene(size: size, levelIndex: nextIndex, gameState: gameState))
         } else {

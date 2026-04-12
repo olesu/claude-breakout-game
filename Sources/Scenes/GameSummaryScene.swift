@@ -9,6 +9,7 @@ enum GameOutcome { case victory, gameOver }
 final class GameSummaryScene: SKScene {
     private let outcome: GameOutcome
     private let score: Int
+    private let sound = SoundCoordinator()
 
     init(size: CGSize, outcome: GameOutcome, score: Int) {
         self.outcome = outcome
@@ -27,6 +28,14 @@ final class GameSummaryScene: SKScene {
         #endif
         backgroundColor = .black
         setupNodes()
+        switch outcome {
+        case .victory:  sound.playLevelComplete()
+        case .gameOver: sound.playGameOver()
+        }
+    }
+
+    override func willMove(from view: SKView) {
+        sound.stopEngine()
     }
 
     private func setupNodes() {

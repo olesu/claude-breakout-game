@@ -58,35 +58,40 @@ struct PowerUpCoordinatorTests {
     @Test func update_whenTimerExpires_returnsPowerBallDeactivationEffect() {
         let coordinator = makeCoordinator()
         coordinator.collect(PowerUpNode(type: .powerBall))
-        let effects = coordinator.update(delta: Theme.Layout.powerUpDuration + 1, floorY: -999)
-        #expect(effects == [.deactivatePowerBall])
+        let result = coordinator.update(delta: Theme.Layout.powerUpDuration + 1, floorY: -999)
+        #expect(result.effects == [.deactivatePowerBall])
+        #expect(result.expiredType == .powerBall)
     }
 
     @Test func update_whenTimerExpires_returnsWidePaddleDeactivationEffect() {
         let coordinator = makeCoordinator()
         coordinator.collect(PowerUpNode(type: .widePaddle))
-        let effects = coordinator.update(delta: Theme.Layout.powerUpDuration + 1, floorY: -999)
-        #expect(effects == [.deactivateWidePaddle])
+        let result = coordinator.update(delta: Theme.Layout.powerUpDuration + 1, floorY: -999)
+        #expect(result.effects == [.deactivateWidePaddle])
+        #expect(result.expiredType == .widePaddle)
     }
 
     @Test func update_whenTimerExpires_returnsSlowBallDeactivationEffect() {
         let coordinator = makeCoordinator()
         coordinator.collect(PowerUpNode(type: .slowBall))
-        let effects = coordinator.update(delta: Theme.Layout.powerUpDuration + 1, floorY: -999)
-        #expect(effects == [.deactivateSlowBall])
+        let result = coordinator.update(delta: Theme.Layout.powerUpDuration + 1, floorY: -999)
+        #expect(result.effects == [.deactivateSlowBall])
+        #expect(result.expiredType == .slowBall)
     }
 
     @Test func update_beforeTimerExpires_returnsNoEffects() {
         let coordinator = makeCoordinator()
         coordinator.collect(PowerUpNode(type: .powerBall))
-        let effects = coordinator.update(delta: 0.1, floorY: -999)
-        #expect(effects.isEmpty)
+        let result = coordinator.update(delta: 0.1, floorY: -999)
+        #expect(result.effects.isEmpty)
+        #expect(result.expiredType == nil)
     }
 
     @Test func update_whenNoActivePowerUp_returnsNoEffects() {
         let coordinator = makeCoordinator()
-        let effects = coordinator.update(delta: Theme.Layout.powerUpDuration + 1, floorY: -999)
-        #expect(effects.isEmpty)
+        let result = coordinator.update(delta: Theme.Layout.powerUpDuration + 1, floorY: -999)
+        #expect(result.effects.isEmpty)
+        #expect(result.expiredType == nil)
     }
 
     // MARK: - collect — returned effects

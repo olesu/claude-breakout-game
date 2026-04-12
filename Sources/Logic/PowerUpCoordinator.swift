@@ -35,12 +35,17 @@ final class PowerUpCoordinator {
     }
 
     @discardableResult
-    func update(delta: TimeInterval, floorY: CGFloat) -> [PowerUpEffect] {
+    func update(
+        delta: TimeInterval,
+        floorY: CGFloat
+    ) -> (effects: [PowerUpEffect], expiredType: PowerUpType?) {
         let before = state
         state = state.tick(delta: delta)
         var effects: [PowerUpEffect] = []
+        var expiredType: PowerUpType?
         if before.isActive && !state.isActive, let type = before.active {
             effects = deactivationEffects(for: type)
+            expiredType = type
         }
         nodes = nodes.filter { node in
             if node.position.y < floorY - 20 {
@@ -51,7 +56,7 @@ final class PowerUpCoordinator {
         }
         laserNodes = laserNodes.filter { $0.parent != nil }
         laserCooldown = max(0, laserCooldown - delta)
-        return effects
+        return (effects: effects, expiredType: expiredType)
     }
 
     func spawnIfEligible(at position: CGPoint) -> PowerUpNode? {
