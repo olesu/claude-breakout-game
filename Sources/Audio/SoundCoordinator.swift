@@ -25,7 +25,7 @@ final class SoundCoordinator {
     // Audio-combo state for pitch boost (independent from scoring combo).
     // private(set) so @testable unit tests can read but not write the counter.
     private(set) var audioComboCounter = 0
-    private var audioLastHitTime: TimeInterval = 0
+    private var audioLastHitTime: TimeInterval = -.infinity
 
     private let defaults: UserDefaults
 
