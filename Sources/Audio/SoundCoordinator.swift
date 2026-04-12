@@ -23,8 +23,8 @@ final class SoundCoordinator {
     private let powerUpNode = AVAudioPlayerNode()
 
     // Audio-combo state for pitch boost (independent from scoring combo).
-    // Internal (not private) so @testable unit tests can inspect the counter.
-    var audioComboCounter = 0
+    // private(set) so @testable unit tests can read but not write the counter.
+    private(set) var audioComboCounter = 0
     private var audioLastHitTime: TimeInterval = 0
 
     private let defaults: UserDefaults
