@@ -38,6 +38,10 @@ final class ContactCoordinator {
     private let remainingBrickCount: () -> Int
     private let comboTracker = ComboTracker()
 
+    // Optional — tests leave this nil so no AVAudioEngine is needed.
+    weak var sound: SoundCoordinator?
+    var totalRows: Int = 1
+
     func resetCombo() { comboTracker.reset() }
 
     init(
@@ -69,9 +73,11 @@ final class ContactCoordinator {
         case .paddleHit(let ball, let point):
             if gamePhase != .waitingToLaunch { paddle.squash() }
             if let ball { reflectBallOffPaddle(contactPoint: point, ball: ball) }
+            sound?.playPaddleHit()
             return ContactOutcome()
         case .wallHit(let wall):
             wall.flash()
+            sound?.playWallHit()
             return ContactOutcome()
         case .laser(let laser, let brick, let point):
             return handleLaser(laser, brick: brick, contactPoint: point)
@@ -87,6 +93,7 @@ final class ContactCoordinator {
 extension ContactCoordinator {
     func handleBrick(_ brick: BrickNode, contactPoint: CGPoint) -> ContactOutcome {
         addToScene(SceneEffects.spawnSparks(at: contactPoint, color: brick.color))
+        sound?.playBrickHit(row: brick.row, totalRows: totalRows)
         switch brick.hit() {
         case .intact(let remaining):
             brick.applyDamage(remainingHits: remaining)

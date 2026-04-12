@@ -111,6 +111,8 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
             removeBrick: { [weak self] brick in self?.bricks.removeAll { $0 === brick } },
             remainingBrickCount: { [weak self] in self?.bricks.count ?? 0 }
         )
+        contactCoordinator.sound = sound
+        contactCoordinator.totalRows = level.grid.count
     }
 
     // MARK: - Game loop
@@ -160,6 +162,7 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
             gameCamera.updateHUD(lives: gameState.lives, score: gameState.score)
             movePaddle(to: x)
             SceneEffects.spawnLaunchRipple(at: primary.position).forEach(addChild)
+            sound.playLaunch()
             primary.launch()
         }
     }
