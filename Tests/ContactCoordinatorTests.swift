@@ -2,6 +2,7 @@
 import SpriteKit
 import Testing
 
+@MainActor
 @Suite("ContactCoordinator")
 // swiftlint:disable:next type_body_length
 struct ContactCoordinatorTests {

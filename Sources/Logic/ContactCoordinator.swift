@@ -29,6 +29,7 @@ struct ContactOutcome {
 
 /// Handles physics contact events on behalf of `GameScene`.
 /// `GameScene.didBegin(_:)` delegates immediately to `handle(_:balls:gamePhase:)`.
+@MainActor
 final class ContactCoordinator {
     private let powerUp: PowerUpCoordinator
     private let paddle: PaddleNode
