@@ -1,5 +1,9 @@
 import AVFoundation
 
+// All mutable state is confined to the main actor, which matches the game's
+// single-threaded SpriteKit update loop and eliminates data races with
+// AVAudioEngine's internal completion-handler queue.
+@MainActor
 final class SoundCoordinator {
     private static let muteKey = "soundMuted"
 
@@ -19,7 +23,8 @@ final class SoundCoordinator {
     private let powerUpNode = AVAudioPlayerNode()
 
     // Audio-combo state for pitch boost (independent from scoring combo).
-    private var audioComboCounter = 0
+    // Internal (not private) so @testable unit tests can inspect the counter.
+    var audioComboCounter = 0
     private var audioLastHitTime: TimeInterval = 0
 
     private let defaults: UserDefaults
@@ -80,8 +85,7 @@ final class SoundCoordinator {
         guard let idx = chosen else { return }
         brickPoolIndex = (idx + 1) % 4
 
-        let now = Date().timeIntervalSinceReferenceDate
-        updateAudioCombo(currentTime: now)
+        updateAudioCombo(currentTime: CACurrentMediaTime())
 
         let pitch = pitchForRow(row: row, totalRows: totalRows)
             + Float.random(in: -50...50)
@@ -93,7 +97,9 @@ final class SoundCoordinator {
             buffer,
             completionCallbackType: .dataConsumed
         ) { [weak self] _ in
-            self?.brickNodeBusy[idx] = false
+            // Completion fires on AVAudioEngine's internal queue; hop back to
+            // main actor to safely write the shared brickNodeBusy array.
+            DispatchQueue.main.async { self?.brickNodeBusy[idx] = false }
         }
         brickHitNodes[idx].play()
     }
@@ -172,6 +178,7 @@ final class SoundCoordinator {
             frameCapacity: frameCount
         ) else { return nil }
         try? file.read(into: buffer)
+        guard buffer.frameLength > 0 else { return nil }
         return buffer
     }
 
@@ -181,12 +188,12 @@ final class SoundCoordinator {
         node.play()
     }
 
-    private func updateAudioCombo(currentTime: TimeInterval) {
-        let hitWindow = 0.15
-        let resetWindow = 0.4
-        if currentTime - audioLastHitTime < hitWindow {
+    /// Increments the combo counter when hits arrive within 0.15 s of each
+    /// other; resets it after any gap longer than that.
+    func updateAudioCombo(currentTime: TimeInterval) {
+        if currentTime - audioLastHitTime < 0.15 {
             audioComboCounter += 1
-        } else if currentTime - audioLastHitTime > resetWindow {
+        } else {
             audioComboCounter = 0
         }
         audioLastHitTime = currentTime

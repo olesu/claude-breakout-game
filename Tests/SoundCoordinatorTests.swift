@@ -3,6 +3,7 @@ import AVFoundation
 import Foundation
 import Testing
 
+@MainActor
 struct SoundCoordinatorTests {
     private func makeCoordinator() throws -> SoundCoordinator {
         let defaults = try #require(UserDefaults(suiteName: UUID().uuidString))
@@ -78,5 +79,38 @@ struct SoundCoordinatorTests {
     @Test func comboBoost_counterZero_returnsZero() throws {
         let coordinator = try makeCoordinator()
         #expect(coordinator.comboBoost(counter: 0) == 0)
+    }
+
+    // MARK: - updateAudioCombo
+
+    @Test func updateAudioCombo_rapidHits_incrementsCounter() throws {
+        let coordinator = try makeCoordinator()
+        coordinator.updateAudioCombo(currentTime: 0.0)
+        coordinator.updateAudioCombo(currentTime: 0.1)  // within 0.15 s window
+        #expect(coordinator.audioComboCounter == 1)
+    }
+
+    @Test func updateAudioCombo_slowHit_resetsCounter() throws {
+        let coordinator = try makeCoordinator()
+        coordinator.updateAudioCombo(currentTime: 0.0)
+        coordinator.updateAudioCombo(currentTime: 0.1)  // increment
+        coordinator.updateAudioCombo(currentTime: 0.5)  // > 0.15 s → reset
+        #expect(coordinator.audioComboCounter == 0)
+    }
+
+    @Test func updateAudioCombo_hitsAtWindowBoundary_resets() throws {
+        let coordinator = try makeCoordinator()
+        coordinator.updateAudioCombo(currentTime: 0.0)
+        coordinator.updateAudioCombo(currentTime: 0.15) // exactly at limit → reset
+        #expect(coordinator.audioComboCounter == 0)
+    }
+
+    @Test func updateAudioCombo_multipleRapidHits_accumulatesCounter() throws {
+        let coordinator = try makeCoordinator()
+        coordinator.updateAudioCombo(currentTime: 0.00)
+        coordinator.updateAudioCombo(currentTime: 0.05)
+        coordinator.updateAudioCombo(currentTime: 0.10)
+        coordinator.updateAudioCombo(currentTime: 0.14)
+        #expect(coordinator.audioComboCounter == 3)
     }
 }
