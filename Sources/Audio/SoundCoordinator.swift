@@ -58,6 +58,10 @@ final class SoundCoordinator {
         }
     }
 
+    func toggleMute() {
+        isMuted.toggle()
+    }
+
     func stopEngine() {
         engine.stop()
         #if os(iOS)

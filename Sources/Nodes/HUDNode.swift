@@ -4,6 +4,7 @@ final class HUDNode: SKNode {
     private let livesLabel: SKLabelNode
     private let scoreLabel: SKLabelNode
     private let pauseButton: SKLabelNode
+    private let muteButton: SKLabelNode
     private let comboLabel: SKLabelNode
     private var lastScore: Int = 0
     private var lastComboMultiplier: Int = 1
@@ -12,6 +13,7 @@ final class HUDNode: SKNode {
         livesLabel = SKLabelNode.makeBody("", color: Theme.Color.accent)
         scoreLabel = SKLabelNode.makeBody("", color: Theme.Color.accent)
         pauseButton = SKLabelNode.makeBody(Theme.Symbol.pause, color: Theme.Color.primary)
+        muteButton = SKLabelNode.makeBody(Theme.Symbol.soundOn, color: Theme.Color.primary)
         comboLabel = SKLabelNode.makeBody("", color: Theme.Color.danger)
         super.init()
         let hudY = sceneSize.height / 2 - topSafeArea - Theme.Layout.hudTopPadding
@@ -21,13 +23,24 @@ final class HUDNode: SKNode {
         pauseButton.horizontalAlignmentMode = .right
         pauseButton.position = CGPoint(x: sceneSize.width / 2 - Theme.Layout.hudSideMargin, y: hudY)
         pauseButton.name = "pauseButton"
+        muteButton.horizontalAlignmentMode = .right
+        muteButton.position = CGPoint(
+            x: sceneSize.width / 2 - Theme.Layout.hudSideMargin - Theme.Layout.hudButtonSpacing,
+            y: hudY
+        )
+        muteButton.name = "muteButton"
         // Combo label sits below the score, hidden while multiplier is ×1
         comboLabel.position = CGPoint(x: 0, y: hudY + Theme.Layout.highScoreOffsetY)
         comboLabel.alpha = 0
         addChild(livesLabel)
         addChild(scoreLabel)
         addChild(pauseButton)
+        addChild(muteButton)
         addChild(comboLabel)
+    }
+
+    func setMuted(_ muted: Bool) {
+        muteButton.text = muted ? Theme.Symbol.soundOff : Theme.Symbol.soundOn
     }
 
     func update(lives: Int, score: Int, comboMultiplier: Int = 1) {

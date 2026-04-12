@@ -59,6 +59,8 @@ enum Theme {
 
     enum Symbol {
         static let pause = "II"
+        static let soundOn  = "♪"
+        static let soundOff = "✕"
     }
 
     enum Layout {
@@ -77,6 +79,7 @@ enum Theme {
         static let brickPoints: Int = 10
         static let hudTopPadding: CGFloat = 8
         static let hudSideMargin: CGFloat = 16
+        static let hudButtonSpacing: CGFloat = 36
         static let highScoreOffsetY: CGFloat = -30
         static let splashButtonSpacing: CGFloat = 44
         static let powerUpSize: CGSize = CGSize(width: 34, height: 14)

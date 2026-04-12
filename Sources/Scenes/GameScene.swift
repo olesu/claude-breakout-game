@@ -63,6 +63,7 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
         addChild(cam)
         camera = cam
         cam.updateHUD(lives: gameState.lives, score: gameState.score)
+        cam.updateMuteButton(isMuted: sound.isMuted)
     }
 
     private func configurePhysics() {
@@ -154,6 +155,9 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
         case .resume:
             gameState = gameState.resume()
             applyPauseState()
+        case .toggleMute:
+            sound.toggleMute()
+            gameCamera.updateMuteButton(isMuted: sound.isMuted)
         case .movePaddle(let x):
             movePaddle(to: x)
         case .launchAndMovePaddle(let x):
@@ -187,9 +191,11 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
         }
         guard let touch = touches.first else { return }
         let loc = touch.location(in: self)
+        let hitNodes = nodes(at: loc)
         handle(inputCoordinator.action(
             at: loc,
-            hittingPauseButton: nodes(at: loc).contains { $0.name == "pauseButton" },
+            hittingPauseButton: hitNodes.contains { $0.name == "pauseButton" },
+            hittingMuteButton: hitNodes.contains { $0.name == "muteButton" },
             phase: gameState.phase
         ))
         if gameState.phase == .playing { fireLasersIfActive() }
@@ -210,9 +216,11 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
 
     override func mouseDown(with event: NSEvent) {
         let loc = event.location(in: self)
+        let hitNodes = nodes(at: loc)
         handle(inputCoordinator.action(
             at: loc,
-            hittingPauseButton: nodes(at: loc).contains { $0.name == "pauseButton" },
+            hittingPauseButton: hitNodes.contains { $0.name == "pauseButton" },
+            hittingMuteButton: hitNodes.contains { $0.name == "muteButton" },
             phase: gameState.phase
         ))
     }
