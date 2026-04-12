@@ -19,6 +19,7 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
     private var gameLoop: GameLoopCoordinator!
     private var contactCoordinator: ContactCoordinator!
     private let persistence = GamePersistenceCoordinator()
+    private let sound = SoundCoordinator()
     private let savedBrickGrid: [[BrickCell]]?
     private let inputCoordinator = InputCoordinator()
     #if os(macOS)
@@ -264,6 +265,7 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
         #if os(macOS)
         mouseTracker.uninstall(from: view)
         #endif
+        sound.stopEngine()
         persistence.sceneWillDisappear(
             isLevelComplete: gameLoop.levelComplete,
             phase: gameState.phase,
