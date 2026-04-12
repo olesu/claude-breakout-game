@@ -40,4 +40,43 @@ struct SoundCoordinatorTests {
         coordinator.isMuted = false
         #expect(coordinator.isMuted == false)
     }
+
+    // MARK: - pitchForRow
+
+    @Test func pitchForRow_topRow_returnsPositive600() throws {
+        let coordinator = try makeCoordinator()
+        #expect(coordinator.pitchForRow(row: 0, totalRows: 5) == 600)
+    }
+
+    @Test func pitchForRow_bottomRow_returnsNegative600() throws {
+        let coordinator = try makeCoordinator()
+        #expect(coordinator.pitchForRow(row: 4, totalRows: 5) == -600)
+    }
+
+    @Test func pitchForRow_middleRow_returnsZero() throws {
+        let coordinator = try makeCoordinator()
+        #expect(coordinator.pitchForRow(row: 2, totalRows: 5) == 0)
+    }
+
+    @Test func pitchForRow_singleRow_returnsZero() throws {
+        let coordinator = try makeCoordinator()
+        #expect(coordinator.pitchForRow(row: 0, totalRows: 1) == 0)
+    }
+
+    // MARK: - comboBoost
+
+    @Test func comboBoost_counterEight_returns200Cents() throws {
+        let coordinator = try makeCoordinator()
+        #expect(coordinator.comboBoost(counter: 8) == 200)
+    }
+
+    @Test func comboBoost_counterNine_sameAsEight() throws {
+        let coordinator = try makeCoordinator()
+        #expect(coordinator.comboBoost(counter: 9) == coordinator.comboBoost(counter: 8))
+    }
+
+    @Test func comboBoost_counterZero_returnsZero() throws {
+        let coordinator = try makeCoordinator()
+        #expect(coordinator.comboBoost(counter: 0) == 0)
+    }
 }
