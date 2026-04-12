@@ -192,14 +192,15 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
         guard let touch = touches.first else { return }
         let loc = touch.location(in: self)
         let hitNodes = nodes(at: loc)
-        let hitHUD = hitNodes.contains { $0.name == "pauseButton" || $0.name == "muteButton" }
+        let hitPause = hitNodes.contains { $0.name == "pauseButton" }
+        let hitMute = hitNodes.contains { $0.name == "muteButton" }
         handle(inputCoordinator.action(
             at: loc,
-            hittingPauseButton: hitNodes.contains { $0.name == "pauseButton" },
-            hittingMuteButton: hitNodes.contains { $0.name == "muteButton" },
+            hittingPauseButton: hitPause,
+            hittingMuteButton: hitMute,
             phase: gameState.phase
         ))
-        if gameState.phase == .playing && !hitHUD { fireLasersIfActive() }
+        if gameState.phase == .playing && !(hitPause || hitMute) { fireLasersIfActive() }
     }
 
     override func touchesMoved(_ touches: Set<UITouch>, with event: UIEvent?) {
