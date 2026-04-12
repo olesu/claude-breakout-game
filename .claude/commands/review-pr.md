@@ -21,4 +21,16 @@ Review the changes against these focus areas:
 Post your review as inline comments where possible:
 `env -u GITHUB_TOKEN gh pr review $ARGUMENTS --comment --body "..."`
 
-End with a summary: overall verdict (approve / request changes), the most important issues, and any suggested follow-up PRs.
+**Labelling:** Apply appropriate labels based on what the diff touches. Fetch available labels first:
+`env -u GITHUB_TOKEN gh label list`
+Apply all that fit. If no existing label captures something significant, create one first:
+`env -u GITHUB_TOKEN gh label create "name" --description "..." --color "RRGGBB"`
+Then apply:
+`env -u GITHUB_TOKEN gh pr edit $ARGUMENTS --add-label "label1,label2"`
+
+**Merge policy:** This is a solo private repo — PRs cannot be self-approved. Instead:
+- If changes are needed: end with "Request changes" and list them. Do NOT attempt `gh pr review --approve`.
+- If the PR is ready: end with "Approved — ready to merge" and run:
+  `env -u GITHUB_TOKEN gh pr merge $ARGUMENTS --squash --delete-branch`
+
+End with a summary: overall verdict (ready to merge / request changes), the most important issues, and any suggested follow-up PRs.
