@@ -25,7 +25,7 @@ final class HUDNode: SKNode {
         pauseButton.name = "pauseButton"
         muteButton.horizontalAlignmentMode = .right
         muteButton.position = CGPoint(
-            x: sceneSize.width / 2 - Theme.Layout.hudSideMargin - Theme.Layout.hudButtonSpacing,
+            x: sceneSize.width / 2 - Theme.Layout.hudSideMargin - Theme.Layout.muteButtonOffset,
             y: hudY
         )
         muteButton.name = "muteButton"
