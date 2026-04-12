@@ -10,7 +10,9 @@
       "Bash(env -u GITHUB_TOKEN gh pr view*)",
       "Bash(env -u GITHUB_TOKEN gh pr list*)",
       "Bash(env -u GITHUB_TOKEN gh pr comment*)",
-      "Bash(env -u GITHUB_TOKEN gh pr review*)"
+      "Bash(env -u GITHUB_TOKEN gh pr review*)",
+      "Bash(env -u GITHUB_TOKEN gh pr diff*)",
+      "Bash(env -u GITHUB_TOKEN gh pr edit*)"
     ]
   },
   "hooks": {
