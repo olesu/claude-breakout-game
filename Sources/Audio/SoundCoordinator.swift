@@ -245,23 +245,33 @@ final class SoundCoordinator {
 
     private func buildAudioGraph() {
         let mixer = engine.mainMixerNode
+        // Use the buffer format explicitly: mono float32 44100 Hz.
+        // On macOS, format: nil defaults to the hardware stereo output format,
+        // which causes a channel-count mismatch crash when mono buffers are
+        // scheduled. iOS silently converts; macOS does not.
+        let format = AVAudioFormat(
+            commonFormat: .pcmFormatFloat32,
+            sampleRate: 44100,
+            channels: 1,
+            interleaved: false
+        )
 
         for idx in 0..<4 {
             engine.attach(brickHitNodes[idx])
             engine.attach(brickPitchUnits[idx])
-            engine.connect(brickHitNodes[idx], to: brickPitchUnits[idx], format: nil)
-            engine.connect(brickPitchUnits[idx], to: mixer, format: nil)
+            engine.connect(brickHitNodes[idx], to: brickPitchUnits[idx], format: format)
+            engine.connect(brickPitchUnits[idx], to: mixer, format: format)
         }
 
         [paddleNode, wallNode, launchNode, sfxNode, powerUpNode, powerUpCollectNode].forEach {
             engine.attach($0)
-            engine.connect($0, to: mixer, format: nil)
+            engine.connect($0, to: mixer, format: format)
         }
 
         engine.attach(powerUpActivateNode)
         engine.attach(powerUpActivatePitch)
-        engine.connect(powerUpActivateNode, to: powerUpActivatePitch, format: nil)
-        engine.connect(powerUpActivatePitch, to: mixer, format: nil)
+        engine.connect(powerUpActivateNode, to: powerUpActivatePitch, format: format)
+        engine.connect(powerUpActivatePitch, to: mixer, format: format)
     }
 
     private func loadBuffers() {
