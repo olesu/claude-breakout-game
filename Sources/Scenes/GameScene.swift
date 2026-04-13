@@ -330,7 +330,6 @@ private extension GameScene {
 
         // Scene transition (happens last)
         if isGameOver {
-            sound.playGameOver()
             persistence.gameOver()
             present(GameSummaryScene(size: size, outcome: .gameOver, score: gameState.score))
         } else {
