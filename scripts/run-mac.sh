@@ -3,19 +3,20 @@ set -euo pipefail
 
 SCHEME="BreakoutGameMac"
 PROJECT="BreakoutGame.xcodeproj"
+DERIVED_DATA="$(pwd)/.derived-data-mac"
 
 echo "==> Building $SCHEME..."
 xcodebuild -project "$PROJECT" \
   -scheme "$SCHEME" \
   -destination "platform=macOS" \
   -configuration Debug \
+  -derivedDataPath "$DERIVED_DATA" \
   build | xcpretty 2>/dev/null || true
 
-APP_PATH=$(find ~/Library/Developer/Xcode/DerivedData -name "BreakoutGameMac.app" \
-  -path "*/Debug/*" | head -1)
+APP_PATH="$DERIVED_DATA/Build/Products/Debug/BreakoutGameMac.app"
 
-if [[ -z "$APP_PATH" ]]; then
-  echo "Error: could not find BreakoutGameMac.app in DerivedData" >&2
+if [[ ! -d "$APP_PATH" ]]; then
+  echo "Error: could not find $APP_PATH" >&2
   exit 1
 fi
 

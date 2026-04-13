@@ -52,13 +52,10 @@ final class SoundCoordinator {
         self.brickPitchUnits = (0..<4).map { _ in AVAudioUnitTimePitch() }
         activateAudioSession()
         buildAudioGraph()
-        do {
-            try engine.start()
-        } catch {
-            print("SoundCoordinator: engine failed to start – \(error)")
-        }
+        startEngine()
         engine.mainMixerNode.outputVolume = defaults.bool(forKey: Self.muteKey) ? 0 : 1
         loadBuffers()
+        observeEngineConfigurationChange()
     }
 
     var isMuted: Bool {
@@ -210,6 +207,34 @@ final class SoundCoordinator {
         play(buffer: powerUpActivateBuffer, on: powerUpActivateNode)
     }
 
+    private func startEngine() {
+        // macOS: disable auto-shutdown so the audio hardware stays active between
+        // sounds. The default is true on macOS (false on iOS), and the hardware
+        // wake-up latency races against the first scheduled buffer, causing all
+        // audio to be silently dropped.
+        #if os(macOS)
+        engine.isAutoShutdownEnabled = false
+        #endif
+        do {
+            try engine.start()
+        } catch {
+            print("SoundCoordinator: engine failed to start – \(error)")
+        }
+    }
+
+    private func observeEngineConfigurationChange() {
+        // On macOS, plugging/unplugging audio devices invalidates the engine's
+        // graph. Restart the engine when this happens so playback resumes.
+        NotificationCenter.default.addObserver(
+            forName: .AVAudioEngineConfigurationChange,
+            object: engine,
+            queue: .main
+        ) { [weak self] _ in
+            guard let self else { return }
+            self.startEngine()
+        }
+    }
+
     private func activateAudioSession() {
         #if os(iOS)
         let session = AVAudioSession.sharedInstance()
@@ -220,23 +245,33 @@ final class SoundCoordinator {
 
     private func buildAudioGraph() {
         let mixer = engine.mainMixerNode
+        // Use the buffer format explicitly: mono float32 44100 Hz.
+        // On macOS, format: nil defaults to the hardware stereo output format,
+        // which causes a channel-count mismatch crash when mono buffers are
+        // scheduled. iOS silently converts; macOS does not.
+        let format = AVAudioFormat(
+            commonFormat: .pcmFormatFloat32,
+            sampleRate: 44100,
+            channels: 1,
+            interleaved: false
+        )
 
         for idx in 0..<4 {
             engine.attach(brickHitNodes[idx])
             engine.attach(brickPitchUnits[idx])
-            engine.connect(brickHitNodes[idx], to: brickPitchUnits[idx], format: nil)
-            engine.connect(brickPitchUnits[idx], to: mixer, format: nil)
+            engine.connect(brickHitNodes[idx], to: brickPitchUnits[idx], format: format)
+            engine.connect(brickPitchUnits[idx], to: mixer, format: format)
         }
 
         [paddleNode, wallNode, launchNode, sfxNode, powerUpNode, powerUpCollectNode].forEach {
             engine.attach($0)
-            engine.connect($0, to: mixer, format: nil)
+            engine.connect($0, to: mixer, format: format)
         }
 
         engine.attach(powerUpActivateNode)
         engine.attach(powerUpActivatePitch)
-        engine.connect(powerUpActivateNode, to: powerUpActivatePitch, format: nil)
-        engine.connect(powerUpActivatePitch, to: mixer, format: nil)
+        engine.connect(powerUpActivateNode, to: powerUpActivatePitch, format: format)
+        engine.connect(powerUpActivatePitch, to: mixer, format: format)
     }
 
     private func loadBuffers() {
