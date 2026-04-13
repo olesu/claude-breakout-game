@@ -52,13 +52,10 @@ final class SoundCoordinator {
         self.brickPitchUnits = (0..<4).map { _ in AVAudioUnitTimePitch() }
         activateAudioSession()
         buildAudioGraph()
-        do {
-            try engine.start()
-        } catch {
-            print("SoundCoordinator: engine failed to start – \(error)")
-        }
+        startEngine()
         engine.mainMixerNode.outputVolume = defaults.bool(forKey: Self.muteKey) ? 0 : 1
         loadBuffers()
+        observeEngineConfigurationChange()
     }
 
     var isMuted: Bool {
@@ -208,6 +205,34 @@ final class SoundCoordinator {
 
     private func playActivateBuffer() {
         play(buffer: powerUpActivateBuffer, on: powerUpActivateNode)
+    }
+
+    private func startEngine() {
+        // macOS: disable auto-shutdown so the audio hardware stays active between
+        // sounds. The default is true on macOS (false on iOS), and the hardware
+        // wake-up latency races against the first scheduled buffer, causing all
+        // audio to be silently dropped.
+        #if os(macOS)
+        engine.isAutoShutdownEnabled = false
+        #endif
+        do {
+            try engine.start()
+        } catch {
+            print("SoundCoordinator: engine failed to start – \(error)")
+        }
+    }
+
+    private func observeEngineConfigurationChange() {
+        // On macOS, plugging/unplugging audio devices invalidates the engine's
+        // graph. Restart the engine when this happens so playback resumes.
+        NotificationCenter.default.addObserver(
+            forName: .AVAudioEngineConfigurationChange,
+            object: engine,
+            queue: .main
+        ) { [weak self] _ in
+            guard let self else { return }
+            self.startEngine()
+        }
     }
 
     private func activateAudioSession() {
