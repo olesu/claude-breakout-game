@@ -4,6 +4,7 @@ import AVFoundation
 // single-threaded SpriteKit update loop and eliminates data races with
 // AVAudioEngine's internal completion-handler queue.
 @MainActor
+// swiftlint:disable:next type_body_length
 final class SoundCoordinator {
     private static let muteKey = "soundMuted"
 
@@ -21,6 +22,9 @@ final class SoundCoordinator {
     private let launchNode = AVAudioPlayerNode()
     private let sfxNode = AVAudioPlayerNode()
     private let powerUpNode = AVAudioPlayerNode()
+    private let powerUpCollectNode = AVAudioPlayerNode()
+    private let powerUpActivateNode = AVAudioPlayerNode()
+    private let powerUpActivatePitch = AVAudioUnitTimePitch()
 
     // Audio-combo state for pitch boost (independent from scoring combo).
     // private(set) so @testable unit tests can read but not write the counter.
@@ -34,6 +38,13 @@ final class SoundCoordinator {
     private var paddleHitBuffer: AVAudioPCMBuffer?
     private var wallHitBuffer: AVAudioPCMBuffer?
     private var launchBuffer: AVAudioPCMBuffer?
+    private var ballLossBuffer: AVAudioPCMBuffer?
+    private var gameOverBuffer: AVAudioPCMBuffer?
+    private var levelCompleteBuffer: AVAudioPCMBuffer?
+    private var powerUpCollectBuffer: AVAudioPCMBuffer?
+    private var powerUpActivateBuffer: AVAudioPCMBuffer?
+    private var powerUpLaserChargeBuffer: AVAudioPCMBuffer?
+    private var powerUpExpireBuffer: AVAudioPCMBuffer?
 
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
@@ -123,6 +134,52 @@ final class SoundCoordinator {
         play(buffer: launchBuffer, on: launchNode)
     }
 
+    /// Short descending tone played when a ball is lost (but game continues).
+    func playBallLoss() {
+        play(buffer: ballLossBuffer, on: sfxNode)
+    }
+
+    /// Dramatic descending arpeggio played on game over.
+    func playGameOver() {
+        play(buffer: gameOverBuffer, on: sfxNode)
+    }
+
+    /// Ascending chime played when a level is cleared.
+    func playLevelComplete() {
+        play(buffer: levelCompleteBuffer, on: sfxNode)
+    }
+
+    /// Quick chime played the moment a power-up is collected.
+    func playPowerUpCollect() {
+        play(buffer: powerUpCollectBuffer, on: powerUpCollectNode)
+    }
+
+    /// Activation sting played after a power-up takes effect.
+    /// Pitch is shifted per type; multiBall plays three times with 50 ms gaps.
+    func playPowerUpActivate(type: PowerUpType) {
+        switch type {
+        case .laser:
+            play(buffer: powerUpLaserChargeBuffer, on: powerUpNode)
+        case .multiBall:
+            powerUpActivatePitch.pitch = 300
+            playActivateBuffer()
+            Task { @MainActor [weak self] in
+                try? await Task.sleep(nanoseconds: 50_000_000)
+                self?.playActivateBuffer()
+                try? await Task.sleep(nanoseconds: 50_000_000)
+                self?.playActivateBuffer()
+            }
+        default:
+            powerUpActivatePitch.pitch = pitchForPowerUpType(type)
+            playActivateBuffer()
+        }
+    }
+
+    /// Short drooping tone played when a timed power-up naturally expires.
+    func playPowerUpExpire() {
+        play(buffer: powerUpExpireBuffer, on: powerUpNode)
+    }
+
     // MARK: - Pitch formula (internal for testability)
 
     /// Row pitch: lerp from +600 cents (top row) to -600 cents (bottom row).
@@ -138,6 +195,20 @@ final class SoundCoordinator {
     }
 
     // MARK: - Private
+
+    private func pitchForPowerUpType(_ type: PowerUpType) -> Float {
+        switch type {
+        case .extraLife:  return  500
+        case .powerBall:  return -200
+        case .widePaddle: return    0
+        case .slowBall:   return -400
+        case .multiBall, .laser: return 0
+        }
+    }
+
+    private func playActivateBuffer() {
+        play(buffer: powerUpActivateBuffer, on: powerUpActivateNode)
+    }
 
     private func activateAudioSession() {
         #if os(iOS)
@@ -157,10 +228,15 @@ final class SoundCoordinator {
             engine.connect(brickPitchUnits[idx], to: mixer, format: nil)
         }
 
-        [paddleNode, wallNode, launchNode, sfxNode, powerUpNode].forEach {
+        [paddleNode, wallNode, launchNode, sfxNode, powerUpNode, powerUpCollectNode].forEach {
             engine.attach($0)
             engine.connect($0, to: mixer, format: nil)
         }
+
+        engine.attach(powerUpActivateNode)
+        engine.attach(powerUpActivatePitch)
+        engine.connect(powerUpActivateNode, to: powerUpActivatePitch, format: nil)
+        engine.connect(powerUpActivatePitch, to: mixer, format: nil)
     }
 
     private func loadBuffers() {
@@ -168,6 +244,13 @@ final class SoundCoordinator {
         paddleHitBuffer = loadBuffer(named: "paddle_hit")
         wallHitBuffer = loadBuffer(named: "wall_hit")
         launchBuffer = loadBuffer(named: "ball_launch")
+        ballLossBuffer = loadBuffer(named: "ball_loss")
+        gameOverBuffer = loadBuffer(named: "game_over")
+        levelCompleteBuffer = loadBuffer(named: "level_complete")
+        powerUpCollectBuffer = loadBuffer(named: "powerup_collect")
+        powerUpActivateBuffer = loadBuffer(named: "powerup_activate")
+        powerUpLaserChargeBuffer = loadBuffer(named: "powerup_laser_charge")
+        powerUpExpireBuffer = loadBuffer(named: "powerup_expire")
     }
 
     private func loadBuffer(named name: String) -> AVAudioPCMBuffer? {
@@ -188,8 +271,11 @@ final class SoundCoordinator {
 
     private func play(buffer: AVAudioPCMBuffer?, on node: AVAudioPlayerNode) {
         guard let buffer else { return }
-        node.scheduleBuffer(buffer, at: nil, options: .interrupts)
+        // play() first ensures the node is in a running state on macOS before
+        // the buffer is queued — scheduling before play() can silently no-op
+        // on macOS when the node has never been started.
         node.play()
+        node.scheduleBuffer(buffer, at: nil, options: .interrupts)
     }
 
     /// Increments the combo counter when hits arrive within 0.15 s of each

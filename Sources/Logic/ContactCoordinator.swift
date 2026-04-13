@@ -136,15 +136,18 @@ extension ContactCoordinator {
         balls: [BallNode],
         gamePhase: GamePhase
     ) -> ContactOutcome {
+        sound?.playPowerUpCollect()
         let ballPos = balls.first?.position ?? paddle.position
         let outcome = powerUp.collect(node)
         switch outcome.result {
         case .activated(let type):
+            sound?.playPowerUpActivate(type: type)
             addToScene(SceneEffects.spawnPowerUpActivationEffect(
                 for: type, ballPosition: ballPos, paddlePosition: paddle.position
             ))
             return ContactOutcome(powerUpEffects: outcome.effects)
         case .instant(.extraLife):
+            sound?.playPowerUpActivate(type: .extraLife)
             addToScene(SceneEffects.spawnPowerUpActivationEffect(
                 for: .extraLife, ballPosition: ballPos, paddlePosition: paddle.position
             ))
@@ -153,6 +156,7 @@ extension ContactCoordinator {
             guard gamePhase == .playing,
                   let primary = balls.first,
                   let vel = primary.physicsBody?.velocity else { return ContactOutcome() }
+            sound?.playPowerUpActivate(type: .multiBall)
             addToScene(SceneEffects.spawnPowerUpActivationEffect(
                 for: .multiBall, ballPosition: primary.position, paddlePosition: paddle.position
             ))

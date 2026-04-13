@@ -3,6 +3,7 @@ import SpriteKit
 struct TickResult {
     let action: FrameAction
     let powerUpEffects: [PowerUpEffect]
+    let expiredPowerUpType: PowerUpType?
 }
 
 final class GameLoopCoordinator {
@@ -48,9 +49,13 @@ final class GameLoopCoordinator {
             )
         }
         enforceMinimumVerticalSpeed(phase: phase, balls: balls)
-        let powerUpEffects = powerUp.update(delta: delta, floorY: floorY)
+        let powerUpUpdate = powerUp.update(delta: delta, floorY: floorY)
 
-        return TickResult(action: action, powerUpEffects: powerUpEffects)
+        return TickResult(
+            action: action,
+            powerUpEffects: powerUpUpdate.effects,
+            expiredPowerUpType: powerUpUpdate.expiredType
+        )
     }
 
     func resetLastUpdateTime() {
