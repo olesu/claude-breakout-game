@@ -82,7 +82,7 @@ final class SoundCoordinator {
     /// Plays a brick-hit sound with pitch derived from row position,
     /// micro-variance, and a combo boost for rapid consecutive hits.
     func playBrickHit(row: Int, totalRows: Int) {
-        guard let buffer = brickHitBuffer else { return }
+        guard let buffer = brickHitBuffer, engine.isRunning else { return }
 
         // Select a free player (round-robin); silent no-op if all are busy.
         let start = brickPoolIndex
@@ -305,7 +305,7 @@ final class SoundCoordinator {
     }
 
     private func play(buffer: AVAudioPCMBuffer?, on node: AVAudioPlayerNode) {
-        guard let buffer else { return }
+        guard let buffer, engine.isRunning else { return }
         // play() first ensures the node is in a running state on macOS before
         // the buffer is queued — scheduling before play() can silently no-op
         // on macOS when the node has never been started.
