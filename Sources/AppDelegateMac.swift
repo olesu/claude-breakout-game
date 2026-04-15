@@ -58,6 +58,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidBecomeActive(_ notification: Notification) {
         if window.isKeyWindow {
             if let scene = skView.scene, scene is GameScene {
+                // Reset flag before hiding: macOS may have called NSCursor.unhide()
+                // internally (e.g. for the fullscreen menu bar), leaving cursorHidden
+                // stale at true while the cursor is actually visible.
+                cursorHidden = false
                 hideCursor()
             }
         }
@@ -92,6 +96,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
 extension AppDelegate: NSWindowDelegate {
     func windowDidBecomeKey(_ notification: Notification) {
+        if skView.scene is GameScene {
+            cursorHidden = false
+            hideCursor()
+        }
         guard !didEnterFullScreen else { return }
         didEnterFullScreen = true
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in

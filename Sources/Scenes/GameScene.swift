@@ -24,6 +24,7 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
     private let inputCoordinator = InputCoordinator()
     #if os(macOS)
     private let mouseTracker = MouseInputTracker()
+    private var mouseMovedMonitor: Any?
     #endif
 
     init(
@@ -53,6 +54,10 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
         #if os(macOS)
         mouseTracker.install(on: view)
         (NSApp.delegate as? AppDelegate)?.hideCursor()
+        mouseMovedMonitor = NSEvent.addLocalMonitorForEvents(matching: .mouseMoved) { event in
+            (NSApp.delegate as? AppDelegate)?.hideCursor()
+            return event
+        }
         #endif
     }
 
@@ -280,6 +285,10 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
     override func willMove(from view: SKView) {
         #if os(macOS)
         mouseTracker.uninstall(from: view)
+        if let monitor = mouseMovedMonitor {
+            NSEvent.removeMonitor(monitor)
+            mouseMovedMonitor = nil
+        }
         #endif
         sound.stopEngine()
         persistence.sceneWillDisappear(
