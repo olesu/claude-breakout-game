@@ -78,6 +78,7 @@ enum Theme {
         static let hudTopPadding: CGFloat = 8
         static let hudSideMargin: CGFloat = 16
         static let muteButtonOffset: CGFloat = 36
+        static let muteButtonAlignmentOffset: CGFloat = 6
         static let highScoreOffsetY: CGFloat = -30
         static let splashButtonSpacing: CGFloat = 44
         static let powerUpSize: CGSize = CGSize(width: 34, height: 14)

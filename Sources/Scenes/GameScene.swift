@@ -243,6 +243,8 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
             case .paused:  handle(.resume)
             default:       break
             }
+        case "m" where gameState.phase == .playing || gameState.phase == .waitingToLaunch:
+            handle(.toggleMute)
         case " " where gameState.phase == .playing:
             fireLasersIfActive()
         #if DEBUG
