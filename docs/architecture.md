@@ -3,6 +3,8 @@ title: Architecture
 layout: page
 ---
 
+<small>Built: {{ site.time | date: "%Y-%m-%d %H:%M UTC" }}</small>
+
 The codebase follows the **Functional Core / Imperative Shell** pattern:
 
 - **Functional core** — plain Swift types with no SpriteKit dependency. State
