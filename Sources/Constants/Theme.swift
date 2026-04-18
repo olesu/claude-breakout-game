@@ -59,8 +59,6 @@ enum Theme {
 
     enum Symbol {
         static let pause = "II"
-        static let soundOn = "♪"
-        static let soundOff = "✕"
     }
 
     enum Layout {
