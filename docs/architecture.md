@@ -105,3 +105,6 @@ stateDiagram-v2
     Playing --> [*] : level cleared → next level / victory
     GameOver --> [*]
 </pre>
+
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+<script>mermaid.initialize({ startOnLoad: true, theme: 'dark' });</script>
