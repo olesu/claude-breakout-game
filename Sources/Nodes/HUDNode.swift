@@ -30,7 +30,7 @@ final class HUDNode: SKNode {
         pauseButton.name = "pauseButton"
         muteButton.position = CGPoint(
             x: sceneSize.width / 2 - Theme.Layout.hudSideMargin - Theme.Layout.muteButtonOffset,
-            y: hudY
+            y: hudY + Theme.Layout.muteButtonAlignmentOffset
         )
         muteButton.name = "muteButton"
         // Combo label sits below the score, hidden while multiplier is ×1
