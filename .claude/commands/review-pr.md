@@ -29,9 +29,11 @@ Apply all that fit. If no existing label captures something significant, create 
 Then apply:
 `env -u GITHUB_TOKEN gh pr edit $ARGUMENTS --add-label "label1,label2"`
 
-**Merge policy:** This is a solo private repo — PRs cannot be self-approved. Instead:
-- If changes are needed: end with "Request changes" and list them. Do NOT attempt `gh pr review --approve`.
-- If the PR is ready: end with "Approved — ready to merge" and run:
-  `env -u GITHUB_TOKEN gh pr merge $ARGUMENTS --squash --delete-branch`
+**Verdict:** End with one of two verdicts — do NOT approve, merge, or close the PR yourself:
+- **"Ready to merge"** — no blockers found; list any minor suggestions as optional follow-ups.
+- **"Request changes"** — list each required change clearly so the author knows what to fix.
 
-End with a summary: overall verdict (ready to merge / request changes), the most important issues, and any suggested follow-up PRs.
+Post the full review summary (verdict, issues, follow-up suggestions) as a comment on the PR:
+`env -u GITHUB_TOKEN gh pr review $ARGUMENTS --comment --body "..."`
+
+Then output the same summary to the terminal.
