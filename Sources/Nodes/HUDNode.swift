@@ -18,7 +18,7 @@ final class HUDNode: SKNode {
         livesLabel = SKLabelNode.makeBody("", color: Theme.Color.accent)
         scoreLabel = SKLabelNode.makeBody("", color: Theme.Color.accent)
         pauseButton = SKLabelNode.makeBody(Theme.Symbol.pause, color: Theme.Color.primary)
-        muteButton = SKSpriteNode(texture: HUDNode.muteTexture(muted: false))
+        muteButton = SKSpriteNode(texture: HUDNode.textureUnmuted)
         comboLabel = SKLabelNode.makeBody("", color: Theme.Color.danger)
         super.init()
         let hudY = sceneSize.height / 2 - topSafeArea - Theme.Layout.hudTopPadding
@@ -46,21 +46,32 @@ final class HUDNode: SKNode {
     }
 
     func setMuted(_ muted: Bool) {
-        muteButton.texture = HUDNode.muteTexture(muted: muted)
+        muteButton.texture = muted ? HUDNode.textureMuted : HUDNode.textureUnmuted
     }
 
-    private static func muteTexture(muted: Bool) -> SKTexture {
-        let symbolName = muted ? "speaker.slash" : "speaker.wave.2"
+    private static let textureUnmuted: SKTexture = {
         #if canImport(UIKit)
         let config = UIImage.SymbolConfiguration(pointSize: Theme.FontSize.small, weight: .regular)
         // swiftlint:disable:next force_unwrapping
-        let image = UIImage(systemName: symbolName, withConfiguration: config)!
+        let image = UIImage(systemName: "speaker.wave.2", withConfiguration: config)!
         #else
         // swiftlint:disable:next force_unwrapping
-        let image = NSImage(systemSymbolName: symbolName, accessibilityDescription: nil)!
+        let image = NSImage(systemSymbolName: "speaker.wave.2", accessibilityDescription: nil)!
         #endif
         return SKTexture(image: image)
-    }
+    }()
+
+    private static let textureMuted: SKTexture = {
+        #if canImport(UIKit)
+        let config = UIImage.SymbolConfiguration(pointSize: Theme.FontSize.small, weight: .regular)
+        // swiftlint:disable:next force_unwrapping
+        let image = UIImage(systemName: "speaker.slash", withConfiguration: config)!
+        #else
+        // swiftlint:disable:next force_unwrapping
+        let image = NSImage(systemSymbolName: "speaker.slash", accessibilityDescription: nil)!
+        #endif
+        return SKTexture(image: image)
+    }()
 
     func update(lives: Int, score: Int, comboMultiplier: Int = 1) {
         livesLabel.text = livesText(lives)
