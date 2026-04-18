@@ -1,0 +1,7 @@
+title: Breakout Game
+description: iOS/macOS breakout game built with Swift + SpriteKit
+theme: minima
+markdown: kramdown
+
+minima:
+  skin: dark
