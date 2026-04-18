@@ -16,6 +16,7 @@ Review the changes against these focus areas:
 - **Dead code** — no unused methods, variables, or imports
 - **Comment quality** — only where logic isn't self-evident; no commented-out code
 - **SwiftLint** — flag anything stylistically off even if it passes the linter
+- **Swift concurrency** — `@MainActor` isolation correct on all UI/SpriteKit code; no data races, no unstructured `Task {}` that escapes actor context without explicit isolation, no missing `await` on actor-isolated calls
 - **Safety** — flag force-unwraps that could crash in real gameplay
 
 Post your review as inline comments where possible:
