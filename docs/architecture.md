@@ -20,8 +20,19 @@ The discipline is: *calculate first, mutate after.*
 ## Component Map
 
 <pre class="mermaid">
-graph TB
+%%{init: {'theme': 'base', 'themeVariables': {
+  'primaryColor': '#0d1b2a',
+  'primaryTextColor': '#e8f4f8',
+  'primaryBorderColor': '#00d4ff',
+  'lineColor': '#ff6b9d',
+  'clusterBkg': '#0a1628',
+  'clusterBorder': '#5a189a',
+  'titleColor': '#00d4ff',
+  'edgeLabelBackground': '#0d1b2a'
+}}}%%
+graph TD
     subgraph Shell["Imperative Shell · SpriteKit"]
+        direction TB
         subgraph Scenes["Scenes"]
             SplashScene
             GameScene
@@ -34,11 +45,11 @@ graph TB
             BrickNode
             HUDNode
             PowerUpNode
-            BackdropNode
         end
     end
 
-    subgraph Core["Functional Core · Plain Swift"]
+    subgraph Core["Functional Core · Pure Swift"]
+        direction TB
         subgraph State["State"]
             GameState
             GamePhase
@@ -58,6 +69,7 @@ graph TB
     end
 
     subgraph Platform["Platform Layer"]
+        direction TB
         SoundCoordinator
         InputCoordinator
         GamePersistenceCoordinator
@@ -65,12 +77,8 @@ graph TB
         HighScoreStore
     end
 
-    GameScene --> Core
-    GameScene --> Platform
-    GameScene --> Nodes
-    SplashScene -->|"new game"| GameScene
-    GameScene -->|"game over / victory"| GameSummaryScene
-    GameSummaryScene -->|"play again"| SplashScene
+    Shell -->|"reads/mutates"| Core
+    Shell -->|"delegates to"| Platform
 </pre>
 
 ---
@@ -78,7 +86,14 @@ graph TB
 ## Scene Flow
 
 <pre class="mermaid">
-flowchart LR
+%%{init: {'theme': 'base', 'themeVariables': {
+  'primaryColor': '#0d1b2a',
+  'primaryTextColor': '#e8f4f8',
+  'primaryBorderColor': '#00d4ff',
+  'lineColor': '#ff6b9d',
+  'edgeLabelBackground': '#0d1b2a'
+}}}%%
+flowchart TD
     SplashScene -->|"tap Play"| GameScene
     GameScene -->|"all levels cleared"| GS_Victory["GameSummaryScene\n(victory)"]
     GameScene -->|"lives = 0"| GS_GameOver["GameSummaryScene\n(game over)"]
@@ -95,16 +110,26 @@ All transitions are pure functions — they return a new `GameState` rather than
 mutating the existing one.
 
 <pre class="mermaid">
+%%{init: {'theme': 'base', 'themeVariables': {
+  'primaryColor': '#0d1b2a',
+  'primaryTextColor': '#e8f4f8',
+  'primaryBorderColor': '#00d4ff',
+  'lineColor': '#ff6b9d',
+  'stateBkg': '#0d1b2a',
+  'stateBorder': '#00d4ff',
+  'labelBackgroundColor': '#0a1628',
+  'transitionColor': '#ff6b9d'
+}}}%%
 stateDiagram-v2
     [*] --> WaitingToLaunch
     WaitingToLaunch --> Playing : launch ball
-    Playing --> WaitingToLaunch : ball lost, lives > 0
-    Playing --> GameOver : ball lost, lives = 0
+    Playing --> WaitingToLaunch : ball lost · lives > 0
+    Playing --> GameOver : ball lost · lives = 0
     Playing --> Paused : pause
     Paused --> Playing : resume
-    Playing --> [*] : level cleared → next level / victory
+    Playing --> [*] : level cleared
     GameOver --> [*]
 </pre>
 
 <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
-<script>mermaid.initialize({ startOnLoad: true, theme: 'dark' });</script>
+<script>mermaid.initialize({ startOnLoad: true });</script>
