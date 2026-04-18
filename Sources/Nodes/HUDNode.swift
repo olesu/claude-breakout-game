@@ -28,8 +28,6 @@ final class HUDNode: SKNode {
         pauseButton.horizontalAlignmentMode = .right
         pauseButton.position = CGPoint(x: sceneSize.width / 2 - Theme.Layout.hudSideMargin, y: hudY)
         pauseButton.name = "pauseButton"
-        muteButton.color = Theme.Color.primary
-        muteButton.colorBlendFactor = 1
         muteButton.position = CGPoint(
             x: sceneSize.width / 2 - Theme.Layout.hudSideMargin - Theme.Layout.muteButtonOffset,
             y: hudY
@@ -49,29 +47,30 @@ final class HUDNode: SKNode {
         muteButton.texture = muted ? HUDNode.textureMuted : HUDNode.textureUnmuted
     }
 
-    private static let textureUnmuted: SKTexture = {
-        #if canImport(UIKit)
-        let config = UIImage.SymbolConfiguration(pointSize: Theme.FontSize.small, weight: .regular)
-        // swiftlint:disable:next force_unwrapping
-        let image = UIImage(systemName: "speaker.wave.2", withConfiguration: config)!
-        #else
-        // swiftlint:disable:next force_unwrapping
-        let image = NSImage(systemSymbolName: "speaker.wave.2", accessibilityDescription: nil)!
-        #endif
-        return SKTexture(image: image)
-    }()
+    private static let textureUnmuted: SKTexture = muteSymbolTexture(named: "speaker.wave.2")
+    private static let textureMuted: SKTexture = muteSymbolTexture(named: "speaker.slash")
 
-    private static let textureMuted: SKTexture = {
+    private static func muteSymbolTexture(named name: String) -> SKTexture {
         #if canImport(UIKit)
         let config = UIImage.SymbolConfiguration(pointSize: Theme.FontSize.small, weight: .regular)
         // swiftlint:disable:next force_unwrapping
-        let image = UIImage(systemName: "speaker.slash", withConfiguration: config)!
-        #else
-        // swiftlint:disable:next force_unwrapping
-        let image = NSImage(systemSymbolName: "speaker.slash", accessibilityDescription: nil)!
-        #endif
+        let image = UIImage(systemName: name, withConfiguration: config)!
+            .withTintColor(Theme.Color.primary, renderingMode: .alwaysOriginal)
         return SKTexture(image: image)
-    }()
+        #else
+        let config = NSImage.SymbolConfiguration(pointSize: Theme.FontSize.small, weight: .regular)
+        // swiftlint:disable:next force_unwrapping
+        let symbol = NSImage(systemSymbolName: name, accessibilityDescription: nil)!
+            .withSymbolConfiguration(config)!
+        let tinted = NSImage(size: symbol.size)
+        tinted.lockFocus()
+        symbol.draw(in: NSRect(origin: .zero, size: symbol.size))
+        Theme.Color.primary.set()
+        NSRect(origin: .zero, size: symbol.size).fill(using: .sourceAtop)
+        tinted.unlockFocus()
+        return SKTexture(image: tinted)
+        #endif
+    }
 
     func update(lives: Int, score: Int, comboMultiplier: Int = 1) {
         livesLabel.text = livesText(lives)
