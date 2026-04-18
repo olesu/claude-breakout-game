@@ -66,13 +66,13 @@ private let levelFiveGrid: [[BrickCell]] = [
 /// The pattern varies by level index so each level looks slightly different.
 private func stubGrid(levelIndex: Int) -> [[BrickCell]] {
     let rows = min(4 + (levelIndex / 10), 10)
+    let isBoss = (levelIndex + 1) % 10 == 0
     return (0..<rows).map { row in
         (0..<10).map { col in
-            let isBossRow = (levelIndex + 1) % 10 == 0
-            if isBossRow && row == 0 { return m(3) }
+            if isBoss && row == 0 { return m(3) }
             if (row + col + levelIndex) % 5 == 0 { return e }
             if (row + col) % 7 == 0 { return b }
-            if isBossRow && (row + col) % 4 == 0 { return i }
+            if isBoss && (row + col) % 4 == 0 { return i }
             return n
         }
     }

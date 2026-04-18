@@ -34,13 +34,6 @@ struct LevelCatalogueTests {
         #expect(Level.all[4].name == "MAZE")
     }
 
-    @Test func bossLevelsAtEveryTenthIndex() {
-        for world in 1...10 {
-            let idx = world * 10 - 1
-            #expect(Level.all[idx].isBoss == true)
-        }
-    }
-
     @Test func nonBossLevelsAreNotBoss() {
         for (idx, level) in Level.all.enumerated() {
             let expectedBoss = (idx + 1) % 10 == 0

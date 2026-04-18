@@ -1,9 +1,4 @@
-struct LevelMetadata {
-    // Fields populated by consuming issues:
-    // #114 — ball speed scaling
-    // #57  — boss phase count
-    // #power-up drop rate extension
-}
+struct LevelMetadata {}
 
 struct Level {
     let name: String
@@ -19,7 +14,6 @@ struct Level {
     var world: Int { (levelIndex / 10) + 1 }
     var indexInWorld: Int { (levelIndex % 10) + 1 }
     var isBoss: Bool { indexInWorld == 10 }
-    var metadata: LevelMetadata { LevelMetadata() }
 
     var brickCount: Int {
         grid.flatMap { $0 }.filter { $0 != .empty && $0 != .indestructible }.count
