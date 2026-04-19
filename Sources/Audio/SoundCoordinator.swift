@@ -231,7 +231,7 @@ final class SoundCoordinator {
             queue: .main
         ) { [weak self] _ in
             guard let self else { return }
-            self.startEngine()
+            MainActor.assumeIsolated { self.startEngine() }
         }
     }
 
