@@ -10,15 +10,15 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
     private let level: Level
     private var gameState: GameState
     // swiftlint:disable:next force_cast
-    var gameCamera: GameCameraNode { camera as! GameCameraNode }
+    private var gameCamera: GameCameraNode { camera as! GameCameraNode }
     private var paddle: PaddleNode!
     private var balls: [BallNode] = []
-    var bricks: [BrickNode] = []
+    private var bricks: [BrickNode] = []
     private var permanentBricks: [BrickNode] = []
     private var powerUp: PowerUpCoordinator!
     private var gameLoop: GameLoopCoordinator!
     private var contactCoordinator: ContactCoordinator!
-    var bossCoordinator: BossCoordinator?
+    private var bossCoordinator: BossCoordinator?
     private let persistence = GamePersistenceCoordinator()
     private let sound = SoundCoordinator()
     private let savedBrickGrid: [[BrickCell]]?
@@ -117,7 +117,7 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
             addToScene: { [weak self] nodes in nodes.forEach { self?.addChild($0) } },
             removeBrick: { [weak self] brick in
                 self?.bricks.removeAll { $0 === brick }
-                self?.bossCoordinator?.brickDestroyed()
+                self?.bossCoordinator?.brickDestroyed().map { self?.applyBossTickResult($0) }
             },
             remainingBrickCount: { [weak self] in self?.bricks.count ?? 0 }
         )
@@ -130,17 +130,18 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
     }
 
     private func setupBossCoordinator(bossPhases: Int) {
-        let columns = level.grid.first?.count ?? 1
-        let boss = buildBossCoordinator(bossPhases: bossPhases, columns: columns)
-        boss.onLifeLost = { [weak self] in self?.handleBossLifeLoss() }
-        bossCoordinator = boss
+        let cols = level.grid.first?.count ?? 1
+        bossCoordinator = makeBossCoordinator(
+            phases: bossPhases, cols: cols, frame: frame, bricks: bricks
+        )
         gameCamera.activateBossHealthBar()
     }
 
     // MARK: - Game loop
 
     override func update(_ currentTime: TimeInterval) {
-        bossCoordinator?.update(currentTime: currentTime, phase: gameState.phase)
+        bossCoordinator?.update(currentTime: currentTime, phase: gameState.phase, bricks: bricks)
+            .map(applyBossTickResult)
         // Indices are descending — safe to remove without shifting earlier positions.
         // No coordinator notification needed when a ball is culled: PowerUpCoordinator holds no
         // ball refs. Deactivation effects reach only balls still in the scene-owned `balls` array.
@@ -342,13 +343,16 @@ private extension GameScene {
         )
     }
 
+    func applyBossTickResult(_ result: BossTickResult) {
+        result.waveBricks.forEach { addChild($0) }
+        bricks.append(contentsOf: result.waveBricks)
+        if let h = result.healthRatio { gameCamera.updateBossHealth(h) }
+        if result.lifeLost { handleBossLifeLoss() }
+    }
+
     func handleBossLifeLoss() {
-        // Boss march reached the paddle zone. Formation is already reset by BossCoordinator.
-        // Remove extra balls so the player restarts with one ball on the paddle.
-        for idx in stride(from: balls.count - 1, through: 1, by: -1) {
-            balls[idx].removeFromParent()
-            balls.remove(at: idx)
-        }
+        balls[1...].forEach { $0.removeFromParent() }
+        balls.removeSubrange(1...)
         handleBallLoss()
     }
 

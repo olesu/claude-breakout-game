@@ -3,8 +3,8 @@ line_length:
   error: 100
 
 file_length:
-  warning: 500
-  error: 500
+  warning: 450
+  error: 450
 
 identifier_name:
   min_length:
