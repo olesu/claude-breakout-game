@@ -11,7 +11,7 @@ final class BossCoordinator {
     private static let baseMarchSpeed: CGFloat = 4
     private static let marchSpeedIncrement: CGFloat = 1
     /// Bricks reaching within this many points of the paddle top trigger a life loss.
-    private static let paddleZoneOffset: CGFloat = 80
+    static let paddleZoneOffset: CGFloat = 80
 
     // MARK: - Callbacks
 

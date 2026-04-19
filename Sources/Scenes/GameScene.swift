@@ -4,22 +4,21 @@ import AppKit
 #endif
 
 // Thin orchestrator; body length reflects coordinator wiring, not logic.
-// swiftlint:disable file_length
 // swiftlint:disable:next type_body_length
 final class GameScene: SKScene, SKPhysicsContactDelegate {
     private let levelIndex: Int
     private let level: Level
     private var gameState: GameState
     // swiftlint:disable:next force_cast
-    private var gameCamera: GameCameraNode { camera as! GameCameraNode }
+    var gameCamera: GameCameraNode { camera as! GameCameraNode }
     private var paddle: PaddleNode!
     private var balls: [BallNode] = []
-    private var bricks: [BrickNode] = []
+    var bricks: [BrickNode] = []
     private var permanentBricks: [BrickNode] = []
     private var powerUp: PowerUpCoordinator!
     private var gameLoop: GameLoopCoordinator!
     private var contactCoordinator: ContactCoordinator!
-    private var bossCoordinator: BossCoordinator?
+    var bossCoordinator: BossCoordinator?
     private let persistence = GamePersistenceCoordinator()
     private let sound = SoundCoordinator()
     private let savedBrickGrid: [[BrickCell]]?
@@ -132,42 +131,8 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
 
     private func setupBossCoordinator(bossPhases: Int) {
         let columns = level.grid.first?.count ?? 1
-        let layout = BrickLayout(
-            size: brickSize(
-                sceneWidth: frame.width,
-                columns: columns,
-                spacing: Theme.Layout.brickSpacing,
-                margin: Theme.Layout.brickSideMargin
-            ),
-            spacing: Theme.Layout.brickSpacing,
-            gridOrigin: brickGridOrigin(
-                sceneMinX: frame.minX,
-                sceneMaxY: frame.maxY,
-                margin: Theme.Layout.brickSideMargin
-            )
-        )
-        let paddleZoneY = frame.minY
-            + Theme.Layout.paddleOffsetY
-            + Theme.Layout.paddleHeight / 2
-            + 80
-        let boss = BossCoordinator(
-            initialBricks: bricks,
-            bossPhases: bossPhases,
-            layout: layout,
-            columns: columns,
-            sceneMaxY: frame.maxY,
-            paddleZoneY: paddleZoneY,
-            getBricks: { [weak self] in self?.bricks ?? [] }
-        )
+        let boss = buildBossCoordinator(bossPhases: bossPhases, columns: columns)
         boss.onLifeLost = { [weak self] in self?.handleBossLifeLoss() }
-        boss.onWaveBricksSpawned = { [weak self] newBricks in
-            guard let self else { return }
-            newBricks.forEach { self.addChild($0) }
-            self.bricks.append(contentsOf: newBricks)
-        }
-        boss.onHealthChanged = { [weak self] health in
-            self?.gameCamera.updateBossHealth(health)
-        }
         bossCoordinator = boss
         gameCamera.activateBossHealthBar()
     }
