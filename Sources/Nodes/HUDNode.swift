@@ -13,6 +13,8 @@ final class HUDNode: SKNode {
     private let comboLabel: SKLabelNode
     private var lastScore: Int = 0
     private var lastComboMultiplier: Int = 1
+    private var bossHealthBar: BossHealthBarNode?
+    private let hudY: CGFloat
 
     init(sceneSize: CGSize, topSafeArea: CGFloat) {
         livesLabel = SKLabelNode.makeBody("", color: Theme.Color.accent)
@@ -20,8 +22,8 @@ final class HUDNode: SKNode {
         pauseButton = SKLabelNode.makeBody(Theme.Symbol.pause, color: Theme.Color.primary)
         muteButton = SKSpriteNode(texture: HUDNode.textureUnmuted)
         comboLabel = SKLabelNode.makeBody("", color: Theme.Color.danger)
+        hudY = sceneSize.height / 2 - topSafeArea - Theme.Layout.hudTopPadding
         super.init()
-        let hudY = sceneSize.height / 2 - topSafeArea - Theme.Layout.hudTopPadding
         livesLabel.horizontalAlignmentMode = .left
         livesLabel.position = CGPoint(x: -sceneSize.width / 2 + Theme.Layout.hudSideMargin, y: hudY)
         scoreLabel.position = CGPoint(x: 0, y: hudY)
@@ -41,6 +43,19 @@ final class HUDNode: SKNode {
         addChild(pauseButton)
         addChild(muteButton)
         addChild(comboLabel)
+    }
+
+    func activateBossHealthBar() {
+        guard bossHealthBar == nil else { return }
+        let bar = BossHealthBarNode()
+        bar.position = CGPoint(x: 0, y: hudY - 16)
+        addChild(bar)
+        bossHealthBar = bar
+        bar.update(health: 1.0)
+    }
+
+    func updateBossHealth(_ health: Float) {
+        bossHealthBar?.update(health: health)
     }
 
     func setMuted(_ muted: Bool) {

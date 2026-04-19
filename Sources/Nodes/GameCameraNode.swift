@@ -26,6 +26,14 @@ final class GameCameraNode: SKCameraNode {
         hud.setMuted(isMuted)
     }
 
+    func activateBossHealthBar() {
+        hud.activateBossHealthBar()
+    }
+
+    func updateBossHealth(_ health: Float) {
+        hud.updateBossHealth(health)
+    }
+
     func setPaused(_ isPaused: Bool) {
         pauseOverlay.isHidden = !isPaused
     }

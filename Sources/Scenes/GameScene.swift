@@ -4,6 +4,7 @@ import AppKit
 #endif
 
 // Thin orchestrator; body length reflects coordinator wiring, not logic.
+// swiftlint:disable file_length
 // swiftlint:disable:next type_body_length
 final class GameScene: SKScene, SKPhysicsContactDelegate {
     private let levelIndex: Int
@@ -18,6 +19,7 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
     private var powerUp: PowerUpCoordinator!
     private var gameLoop: GameLoopCoordinator!
     private var contactCoordinator: ContactCoordinator!
+    private var bossCoordinator: BossCoordinator?
     private let persistence = GamePersistenceCoordinator()
     private let sound = SoundCoordinator()
     private let savedBrickGrid: [[BrickCell]]?
@@ -114,16 +116,66 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
             paddle: paddle,
             gameLoop: gameLoop,
             addToScene: { [weak self] nodes in nodes.forEach { self?.addChild($0) } },
-            removeBrick: { [weak self] brick in self?.bricks.removeAll { $0 === brick } },
+            removeBrick: { [weak self] brick in
+                self?.bricks.removeAll { $0 === brick }
+                self?.bossCoordinator?.brickDestroyed()
+            },
             remainingBrickCount: { [weak self] in self?.bricks.count ?? 0 }
         )
         contactCoordinator.sound = sound
         contactCoordinator.totalRows = level.grid.count
+
+        let bossPhases = level.metadata.bossPhases
+        guard level.isBoss, bossPhases > 0 else { return }
+        setupBossCoordinator(bossPhases: bossPhases)
+    }
+
+    private func setupBossCoordinator(bossPhases: Int) {
+        let columns = level.grid.first?.count ?? 1
+        let layout = BrickLayout(
+            size: brickSize(
+                sceneWidth: frame.width,
+                columns: columns,
+                spacing: Theme.Layout.brickSpacing,
+                margin: Theme.Layout.brickSideMargin
+            ),
+            spacing: Theme.Layout.brickSpacing,
+            gridOrigin: brickGridOrigin(
+                sceneMinX: frame.minX,
+                sceneMaxY: frame.maxY,
+                margin: Theme.Layout.brickSideMargin
+            )
+        )
+        let paddleZoneY = frame.minY
+            + Theme.Layout.paddleOffsetY
+            + Theme.Layout.paddleHeight / 2
+            + 80
+        let boss = BossCoordinator(
+            initialBricks: bricks,
+            bossPhases: bossPhases,
+            layout: layout,
+            columns: columns,
+            sceneMaxY: frame.maxY,
+            paddleZoneY: paddleZoneY,
+            getBricks: { [weak self] in self?.bricks ?? [] }
+        )
+        boss.onLifeLost = { [weak self] in self?.handleBossLifeLoss() }
+        boss.onWaveBricksSpawned = { [weak self] newBricks in
+            guard let self else { return }
+            newBricks.forEach { self.addChild($0) }
+            self.bricks.append(contentsOf: newBricks)
+        }
+        boss.onHealthChanged = { [weak self] health in
+            self?.gameCamera.updateBossHealth(health)
+        }
+        bossCoordinator = boss
+        gameCamera.activateBossHealthBar()
     }
 
     // MARK: - Game loop
 
     override func update(_ currentTime: TimeInterval) {
+        bossCoordinator?.update(currentTime: currentTime, phase: gameState.phase)
         // Indices are descending — safe to remove without shifting earlier positions.
         // No coordinator notification needed when a ball is culled: PowerUpCoordinator holds no
         // ball refs. Deactivation effects reach only balls still in the scene-owned `balls` array.
@@ -323,6 +375,16 @@ private extension GameScene {
             lives: gameState.lives,
             brickGrid: brickGrid(from: bricks + permanentBricks, level: level)
         )
+    }
+
+    func handleBossLifeLoss() {
+        // Boss march reached the paddle zone. Formation is already reset by BossCoordinator.
+        // Remove extra balls so the player restarts with one ball on the paddle.
+        for idx in stride(from: balls.count - 1, through: 1, by: -1) {
+            balls[idx].removeFromParent()
+            balls.remove(at: idx)
+        }
+        handleBallLoss()
     }
 
     func handleBallLoss() {
