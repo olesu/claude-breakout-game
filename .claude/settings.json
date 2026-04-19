@@ -25,6 +25,16 @@
             "command": "/Users/olesu/Developer/breakout-game/.claude/hooks/guard-main-branch.sh"
           }
         ]
+      },
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/Users/olesu/Developer/breakout-game/.claude/hooks/check-file-size.sh",
+            "statusMessage": "Checking file size limits..."
+          }
+        ]
       }
     ],
     "PostToolUse": [
