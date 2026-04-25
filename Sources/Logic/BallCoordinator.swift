@@ -52,6 +52,7 @@ final class BallCoordinator {
 
     /// Removes all balls except the primary (index 0). Used on boss life-loss.
     func removeExtras() {
+        guard balls.count > 1 else { return }
         balls[1...].forEach { $0.removeFromParent() }
         balls.removeSubrange(1...)
     }
